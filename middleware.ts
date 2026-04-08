@@ -15,7 +15,15 @@ export async function middleware(request: NextRequest) {
     '/services', 
     '/explore',
     '/about',
+    '/faq',
+    '/privacy',
+    '/terms',
+    '/refund-policy',
+    '/how-it-works',
+    '/support',
+    '/become-pro',
     '/api/auth',
+    '/api/services',
     '/grid.svg'
   ]
   
