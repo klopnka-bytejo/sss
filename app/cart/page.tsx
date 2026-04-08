@@ -32,6 +32,7 @@ type CartItem = {
     description: string
     game: string
     price_cents: number
+    base_price_cents: number
     price_type: string
     game_info?: {
       name: string

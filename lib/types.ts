@@ -59,6 +59,7 @@ export interface Service {
   game: string
   game_id: string | null
   price_cents: number
+  base_price_cents: number
   price_type: PriceType
   pricing_type: PricingType
   price_per_level_cents: number | null

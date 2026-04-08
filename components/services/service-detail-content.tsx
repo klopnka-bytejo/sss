@@ -99,13 +99,13 @@ export function ServiceDetailContent({ service, addons, reviews, isLoggedIn }: S
 
   // Calculate dynamic price
   const calculatedPrice = useMemo(() => {
-    let basePrice = service.price_cents
+    let basePrice = service.base_price_cents || 0
 
     // If dynamic pricing (per_rank or per_level)
     if (service.pricing_type === "dynamic" || service.price_type === "per_rank") {
       const levelDiff = Math.max(0, desiredLevel - currentLevel)
       // Price per level/rank
-      basePrice = service.price_cents * Math.max(1, levelDiff)
+      basePrice = (service.base_price_cents || 0) * Math.max(1, levelDiff)
     }
 
     // Apply speed multiplier
@@ -548,7 +548,7 @@ export function ServiceDetailContent({ service, addons, reviews, isLoggedIn }: S
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Base Price</span>
-                    <span>{formatCurrency(service.price_cents)}</span>
+                    <span>{formatCurrency(service.base_price_cents || 0)}</span>
                   </div>
                   
                   {isDynamic && (

@@ -1,20 +1,40 @@
-import { updateSession } from '@/lib/supabase/middleware'
-import { type NextRequest } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
+import { jwtVerify } from 'jose'
+
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key')
 
 export async function middleware(request: NextRequest) {
-  return await updateSession(request)
+  // Get token from cookies
+  const token = request.cookies.get('auth_token')?.value
+
+  // Paths that don't need authentication
+  const publicPaths = ['/auth/login', '/auth/register', '/auth/admin', '/auth/verify', '/', '/games', '/services', '/about', '/grid.svg']
+  const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path))
+
+  if (isPublicPath) {
+    return NextResponse.next()
+  }
+
+  // If no token and requesting protected path, redirect to login
+  if (!token) {
+    return NextResponse.redirect(new URL('/auth/login', request.url))
+  }
+
+  // Verify token (optional - for now just pass through)
+  try {
+    if (token) {
+      await jwtVerify(token, JWT_SECRET)
+    }
+  } catch (err) {
+    // Invalid token - redirect to login
+    return NextResponse.redirect(new URL('/auth/login', request.url))
+  }
+
+  return NextResponse.next()
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - images - .svg, .png, .jpg, .jpeg, .gif, .webp
-     * Feel free to modify this pattern to include more paths.
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

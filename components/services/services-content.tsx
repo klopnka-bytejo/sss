@@ -238,7 +238,7 @@ export function ServicesContent({
                 <CardContent className="pb-3">
                   <div className="flex items-baseline gap-1">
                     <span className="text-2xl font-bold text-gradient">
-                      {formatCurrency(service.price_cents)}
+                      {formatCurrency(service.base_price_cents || 0)}
                     </span>
                     {service.price_type === "hourly" && (
                       <span className="text-sm text-muted-foreground">/hr</span>

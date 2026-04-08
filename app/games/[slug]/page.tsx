@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { sql } from "@/lib/neon/server"
 import { AppLayout } from "@/components/app-layout"
 import { notFound } from "next/navigation"
 import Link from "next/link"
@@ -35,27 +35,34 @@ export default async function GameDetailPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const supabase = await createClient()
   
-  // Get game info
-  const { data: game, error } = await supabase
-    .from("games")
-    .select("*")
-    .eq("slug", slug)
-    .eq("is_active", true)
-    .single()
+  let game: any = null
+  let services: any[] = []
   
-  if (error || !game) {
+  try {
+    // Get game info
+    const games = await sql`
+      SELECT * FROM games
+      WHERE slug = ${slug} AND is_active = true
+      LIMIT 1
+    `
+    
+    if (!games || games.length === 0) {
+      notFound()
+    }
+    
+    game = games[0]
+    
+    // Get services for this game
+    services = await sql`
+      SELECT * FROM services
+      WHERE game_id = ${game.id} AND is_active = true
+      ORDER BY created_at DESC
+    `
+  } catch (error) {
+    console.error('[v0] Database error:', error)
     notFound()
   }
-  
-  // Get services for this game
-  const { data: services } = await supabase
-    .from("services")
-    .select("*")
-    .eq("game_id", game.id)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false })
   
   // Group services by category
   const servicesByCategory = (services || []).reduce((acc, service) => {
@@ -178,7 +185,7 @@ export default async function GameDetailPage({
                           <div>
                             <p className="text-xs text-muted-foreground">Starting at</p>
                             <p className="text-xl font-bold text-primary">
-                              {formatCurrency(service.price_cents)}
+                              {formatCurrency(service.base_price_cents)}
                             </p>
                           </div>
                           

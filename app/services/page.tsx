@@ -66,14 +66,14 @@ export default async function ServicesPage({ searchParams }: PageProps) {
   return (
     <AppLayout 
       breadcrumbs={[{ label: "Services" }]} 
-      userRole={userProfile?.role || "client"}
-      user={userProfile}
+      userRole="client"
+      user={null}
     >
       <Suspense fallback={<div className="p-6">Loading...</div>}>
         <ServicesContent 
           services={services || []} 
           games={games || []}
-          user={userProfile}
+          user={null}
           selectedGame={params.game}
           selectedCategory={params.category}
         />

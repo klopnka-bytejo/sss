@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { createClient } from "@/lib/supabase/server"
+import { sql } from "@/lib/neon/server"
 import { 
   Gamepad2, 
   Search,
@@ -31,19 +31,24 @@ function formatCurrency(cents: number) {
 }
 
 export default async function ExplorePage() {
-  const supabase = await createClient()
+  let games: any[] = []
+  let services: any[] = []
   
-  const { data: games } = await supabase
-    .from('games')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
-
-  const { data: services } = await supabase
-    .from('services')
-    .select('*')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
+  try {
+    games = await sql`
+      SELECT * FROM games 
+      WHERE is_active = true 
+      ORDER BY sort_order ASC
+    `
+    
+    services = await sql`
+      SELECT * FROM services 
+      WHERE is_active = true 
+      ORDER BY created_at DESC
+    `
+  } catch (error) {
+    console.error('[v0] Database error:', error)
+  }
 
   const boostingServices = services?.filter(s => s.category === 'boosting') || []
   const coachingServices = services?.filter(s => s.category === 'coaching') || []
@@ -301,7 +306,7 @@ function ServiceCard({ service }: { service: any }) {
               <span>1-3 days</span>
             </div>
             <div className="text-base font-bold text-gradient">
-              {formatCurrency(service.price_cents)}
+              {formatCurrency(service.base_price_cents || 0)}
             </div>
           </div>
         </CardContent>

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { sql } from "@/lib/neon/server"
 import { AppLayout } from "@/components/app-layout"
 import Link from "next/link"
 import Image from "next/image"
@@ -7,24 +7,31 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowRight, Gamepad2 } from "lucide-react"
 
 export default async function GamesPage() {
-  const supabase = await createClient()
+  let games: any[] = []
+  let gameServiceCounts: Record<string, number> = {}
   
-  const { data: games } = await supabase
-    .from("games")
-    .select("*")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true })
-  
-  // Get service counts per game
-  const { data: serviceCounts } = await supabase
-    .from("services")
-    .select("game_id")
-    .eq("is_active", true)
-  
-  const gameServiceCounts = (serviceCounts || []).reduce((acc, s) => {
-    acc[s.game_id] = (acc[s.game_id] || 0) + 1
-    return acc
-  }, {} as Record<string, number>)
+  try {
+    games = await sql`
+      SELECT * FROM games 
+      WHERE is_active = true 
+      ORDER BY sort_order ASC
+    `
+    
+    // Get service counts per game
+    const serviceCounts = await sql`
+      SELECT game_id, COUNT(*)::int as count 
+      FROM services 
+      WHERE is_active = true 
+      GROUP BY game_id
+    `
+    
+    gameServiceCounts = (serviceCounts || []).reduce((acc: Record<string, number>, s: any) => {
+      acc[s.game_id] = s.count
+      return acc
+    }, {})
+  } catch (error) {
+    console.error('[v0] Database error:', error)
+  }
 
   return (
     <AppLayout>
