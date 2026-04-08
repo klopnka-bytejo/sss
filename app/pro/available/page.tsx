@@ -1,5 +1,7 @@
 "use client"
 
+export const dynamic = "force-dynamic"
+
 import { useState, useEffect } from "react"
 import { AppLayout } from "@/components/app-layout"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
@@ -23,65 +25,80 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { 
-  Gamepad2, 
-  Clock, 
-  DollarSign, 
-  Zap, 
+import {
+  Gamepad2,
+  Clock,
+  DollarSign,
+  Zap,
   RefreshCw,
   CheckCircle,
   Filter,
-  AlertTriangle
+  AlertTriangle,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { formatCurrency } from "@/lib/utils"
 import type { Order, Service, Game } from "@/lib/types"
 import { useRouter } from "next/navigation"
 
+type OrderWithService = Order & {
+  service?: Service | null
+}
+
 export default function ProAvailableOrdersPage() {
-  const [orders, setOrders] = useState<(Order & { service?: Service })[]>([])
+  const [orders, setOrders] = useState<OrderWithService[]>([])
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
   const [accepting, setAccepting] = useState<string | null>(null)
   const [selectedGame, setSelectedGame] = useState<string>("all")
-  const [confirmOrder, setConfirmOrder] = useState<Order | null>(null)
+  const [confirmOrder, setConfirmOrder] = useState<OrderWithService | null>(null)
   const router = useRouter()
-  
+
   const supabase = createClient()
 
   useEffect(() => {
     fetchData()
-    // Refresh every 30 seconds for FCFS
     const interval = setInterval(fetchData, 30000)
     return () => clearInterval(interval)
   }, [])
 
   async function fetchData() {
-    const [ordersRes, gamesRes] = await Promise.all([
-      supabase
-        .from("orders")
-        .select("*, service:services(*)")
-        .eq("status", "paid")
-        .is("pro_id", null)
-        .order("created_at", { ascending: true }),
-      supabase.from("games").select("*").eq("is_active", true).order("sort_order"),
-    ])
-    setOrders(ordersRes.data || [])
-    setGames(gamesRes.data || [])
-    setLoading(false)
+    try {
+      setLoading(true)
+
+      const [ordersRes, gamesRes] = await Promise.all([
+        supabase
+          .from("orders")
+          .select("*, service:services(*)")
+          .eq("status", "paid")
+          .is("pro_id", null)
+          .order("created_at", { ascending: true }),
+        supabase.from("games").select("*").eq("is_active", true).order("sort_order"),
+      ])
+
+      setOrders((ordersRes.data as OrderWithService[]) || [])
+      setGames((gamesRes.data as Game[]) || [])
+    } catch (error) {
+      console.error("Error fetching available orders:", error)
+      setOrders([])
+      setGames([])
+    } finally {
+      setLoading(false)
+    }
   }
 
-  async function handleAcceptOrder(order: Order) {
+  async function handleAcceptOrder(order: OrderWithService) {
     setAccepting(order.id)
-    
+
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
       if (!user) {
         alert("Please log in to accept orders")
         return
       }
 
-      // Attempt to claim the order (FCFS)
       const res = await fetch("/api/orders/accept", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -100,7 +117,6 @@ export default function ProAvailableOrdersPage() {
         return
       }
 
-      // Success - redirect to order details
       router.push(`/pro/orders/${order.id}`)
     } catch (error) {
       console.error("Error accepting order:", error)
@@ -111,13 +127,14 @@ export default function ProAvailableOrdersPage() {
     }
   }
 
-  const filteredOrders = selectedGame === "all" 
-    ? orders 
-    : orders.filter(o => o.service?.game_id === selectedGame)
+  const filteredOrders =
+    selectedGame === "all"
+      ? orders
+      : orders.filter((o) => o.service?.game_id === selectedGame)
 
-  const calculatePayout = (order: Order) => {
-    // 85% payout (15% platform fee)
-    return Math.round(order.total_cents * 0.85)
+  const calculatePayout = (order: OrderWithService | null) => {
+    const total = order?.total_cents ?? 0
+    return Math.round(total * 0.85)
   }
 
   return (
@@ -136,7 +153,6 @@ export default function ProAvailableOrdersPage() {
           </Button>
         </div>
 
-        {/* Info Banner */}
         <Card className="bg-primary/5 border-primary/20">
           <CardContent className="py-4">
             <div className="flex items-start gap-3">
@@ -154,7 +170,6 @@ export default function ProAvailableOrdersPage() {
           </CardContent>
         </Card>
 
-        {/* Filter */}
         <div className="flex items-center gap-4">
           <Filter className="h-4 w-4 text-muted-foreground" />
           <Select value={selectedGame} onValueChange={setSelectedGame}>
@@ -175,7 +190,6 @@ export default function ProAvailableOrdersPage() {
           </span>
         </div>
 
-        {/* Orders Grid */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Spinner className="h-8 w-8" />
@@ -200,15 +214,14 @@ export default function ProAvailableOrdersPage() {
                       <Gamepad2 className="h-3 w-3 mr-1" />
                       {order.service?.game || "Game"}
                     </Badge>
-                    <Badge variant="secondary">
-                      #{order.order_number}
-                    </Badge>
+                    <Badge variant="secondary">#{order.order_number}</Badge>
                   </div>
                   <CardTitle className="text-lg">{order.service?.title || "Service"}</CardTitle>
                   <CardDescription className="line-clamp-2">
                     {order.service?.description || "No description"}
                   </CardDescription>
                 </CardHeader>
+
                 <CardContent className="flex-1">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm">
@@ -220,6 +233,7 @@ export default function ProAvailableOrdersPage() {
                         {formatCurrency(calculatePayout(order))}
                       </span>
                     </div>
+
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground flex items-center gap-1">
                         <Clock className="h-4 w-4" />
@@ -227,6 +241,7 @@ export default function ProAvailableOrdersPage() {
                       </span>
                       <span>{order.service?.estimated_hours || 24}h</span>
                     </div>
+
                     {order.service?.delivery_type && (
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Delivery</span>
@@ -235,6 +250,7 @@ export default function ProAvailableOrdersPage() {
                         </Badge>
                       </div>
                     )}
+
                     {order.notes && (
                       <div className="pt-2 border-t">
                         <p className="text-xs text-muted-foreground mb-1">Client Notes:</p>
@@ -243,9 +259,10 @@ export default function ProAvailableOrdersPage() {
                     )}
                   </div>
                 </CardContent>
+
                 <CardFooter className="pt-0">
-                  <Button 
-                    className="w-full" 
+                  <Button
+                    className="w-full"
                     onClick={() => setConfirmOrder(order)}
                     disabled={accepting === order.id}
                   >
@@ -267,8 +284,10 @@ export default function ProAvailableOrdersPage() {
           </div>
         )}
 
-        {/* Confirm Dialog */}
-        <AlertDialog open={!!confirmOrder} onOpenChange={(open) => !open && setConfirmOrder(null)}>
+        <AlertDialog
+          open={!!confirmOrder}
+          onOpenChange={(open) => !open && setConfirmOrder(null)}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2">
@@ -277,33 +296,41 @@ export default function ProAvailableOrdersPage() {
               </AlertDialogTitle>
               <AlertDialogDescription className="space-y-3">
                 <p>
-                  You are about to accept order <strong>#{confirmOrder?.order_number}</strong>.
+                  You are about to accept order{" "}
+                  <strong>#{confirmOrder?.order_number ?? "N/A"}</strong>.
                 </p>
+
                 <div className="bg-muted/50 rounded-lg p-3 space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Service:</span>
-                    <span className="font-medium">{confirmOrder?.service?.title}</span>
+                    <span className="font-medium">
+                      {confirmOrder?.service?.title || "Unknown Service"}
+                    </span>
                   </div>
+
                   <div className="flex justify-between">
                     <span>Your Payout:</span>
                     <span className="font-medium text-green-500">
-                      {formatCurrency(calculatePayout(confirmOrder!))}
+                      {formatCurrency(calculatePayout(confirmOrder))}
                     </span>
                   </div>
+
                   <div className="flex justify-between">
                     <span>Est. Completion:</span>
                     <span>{confirmOrder?.service?.estimated_hours || 24} hours</span>
                   </div>
                 </div>
+
                 <p className="text-muted-foreground">
-                  By accepting, you commit to completing this order on time. 
+                  By accepting, you commit to completing this order on time.
                   Abandoning orders may result in penalties.
                 </p>
               </AlertDialogDescription>
             </AlertDialogHeader>
+
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction 
+              <AlertDialogAction
                 onClick={() => confirmOrder && handleAcceptOrder(confirmOrder)}
                 disabled={accepting !== null}
               >
