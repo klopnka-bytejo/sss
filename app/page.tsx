@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { createClient } from "@/lib/supabase/server"
+import { sql } from "@/lib/neon/server"
 import { 
   Gamepad2, 
   Shield, 
@@ -28,23 +28,28 @@ function formatCurrency(cents: number) {
 }
 
 export default async function LandingPage() {
-  const supabase = await createClient()
+  let games = []
+  let services = []
   
-  // Fetch games from database
-  const { data: games } = await supabase
-    .from('games')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
-    .limit(8)
-
-  // Fetch popular services
-  const { data: services } = await supabase
-    .from('services')
-    .select('*')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .limit(6)
+  try {
+    // Fetch games from Neon database
+    games = await sql`
+      SELECT * FROM games 
+      WHERE is_active = true 
+      ORDER BY sort_order ASC 
+      LIMIT 8
+    `
+    
+    // Fetch popular services
+    services = await sql`
+      SELECT * FROM services 
+      WHERE is_active = true 
+      ORDER BY created_at DESC 
+      LIMIT 6
+    `
+  } catch (error) {
+    console.error("Database error:", error)
+  }
 
   return (
     <div className="min-h-screen bg-background">

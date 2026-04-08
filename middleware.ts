@@ -1,8 +1,8 @@
-import { updateSession } from '@/lib/supabase/middleware'
-import { type NextRequest } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  return await updateSession(request)
+  // For Neon + custom auth, we can add authentication logic here if needed
+  return NextResponse.next()
 }
 
 export const config = {
