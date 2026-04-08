@@ -1,51 +1,89 @@
 import Link from "next/link"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { createClient } from "@/lib/supabase/server"
-import { 
-  Gamepad2, 
-  Shield, 
-  Zap, 
-  Trophy, 
-  Users, 
+import {
+  Gamepad2,
+  Shield,
+  Zap,
+  Trophy,
+  Users,
   Star,
   ArrowRight,
   CheckCircle2,
   Search,
   Clock,
   TrendingUp,
-  Play
+  Play,
 } from "lucide-react"
 
+export const dynamic = "force-static"
+
 function formatCurrency(cents: number) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
   }).format(cents / 100)
 }
 
-export default async function LandingPage() {
-  const supabase = await createClient()
-  
-  // Fetch games from database
-  const { data: games } = await supabase
-    .from('games')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
-    .limit(8)
+const games = [
+  { id: "1", name: "Valorant", slug: "valorant" },
+  { id: "2", name: "League of Legends", slug: "league-of-legends" },
+  { id: "3", name: "Fortnite", slug: "fortnite" },
+  { id: "4", name: "Apex Legends", slug: "apex-legends" },
+  { id: "5", name: "Rocket League", slug: "rocket-league" },
+  { id: "6", name: "Overwatch 2", slug: "overwatch-2" },
+  { id: "7", name: "CS2", slug: "cs2" },
+  { id: "8", name: "EA FC", slug: "ea-fc" },
+]
 
-  // Fetch popular services
-  const { data: services } = await supabase
-    .from('services')
-    .select('*')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .limit(6)
+const services = [
+  {
+    id: "1",
+    category: "boosting",
+    title: "Rank Boosting",
+    description: "Fast, secure, and professional boosting service by verified PROs.",
+    price_cents: 2999,
+  },
+  {
+    id: "2",
+    category: "coaching",
+    title: "1-on-1 Coaching",
+    description: "Improve your gameplay with personalized coaching sessions.",
+    price_cents: 1999,
+  },
+  {
+    id: "3",
+    category: "account",
+    title: "Account Leveling",
+    description: "Quick and efficient account progression handled by experts.",
+    price_cents: 1499,
+  },
+  {
+    id: "4",
+    category: "boosting",
+    title: "Placement Matches",
+    description: "Get help finishing your placements with confidence.",
+    price_cents: 2499,
+  },
+  {
+    id: "5",
+    category: "coaching",
+    title: "Advanced Strategy Session",
+    description: "Master macro, mechanics, and game sense with elite coaching.",
+    price_cents: 3499,
+  },
+  {
+    id: "6",
+    category: "account",
+    title: "Battle Pass Completion",
+    description: "Complete your battle pass before the season ends.",
+    price_cents: 1799,
+  },
+]
 
+export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -57,7 +95,7 @@ export default async function LandingPage() {
             </div>
             <span className="text-lg font-semibold">Elevate</span>
           </Link>
-          
+
           <nav className="hidden md:flex items-center gap-1">
             <Link href="/games" className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
               Games
@@ -104,18 +142,16 @@ export default async function LandingPage() {
             <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
               Connect with verified PROs for boosting, coaching, and account services across all major games.
             </p>
-            
-            {/* Search Bar */}
+
             <div className="max-w-xl mx-auto relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search services, games, or PROs..." 
+              <Input
+                placeholder="Search services, games, or PROs..."
                 className="pl-11 pr-4 h-12 bg-card/80 border-border/50 text-base"
               />
             </div>
           </div>
 
-          {/* Quick Categories */}
           <div className="flex flex-wrap justify-center gap-2 mb-12">
             <Button variant="secondary" size="sm" className="gap-2" asChild>
               <Link href="/services?category=boosting">
@@ -151,27 +187,16 @@ export default async function LandingPage() {
               </Link>
             </Button>
           </div>
-          
+
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-            {games?.map((game) => (
+            {games.map((game) => (
               <Link
                 key={game.id}
                 href={`/games/${game.slug}`}
                 className="group flex flex-col items-center gap-2 p-3 rounded-xl bg-card/50 border border-border/30 hover:border-primary/50 hover:bg-card transition-all duration-200"
               >
-                <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-secondary">
-                  {game.logo_url ? (
-                    <Image
-                      src={game.logo_url}
-                      alt={game.name}
-                      fill
-                      className="object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Gamepad2 className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                  )}
+                <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-secondary flex items-center justify-center">
+                  <Gamepad2 className="h-6 w-6 text-muted-foreground" />
                 </div>
                 <span className="text-xs font-medium text-center line-clamp-1">{game.name}</span>
               </Link>
@@ -197,7 +222,7 @@ export default async function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {services?.map((service) => (
+            {services.map((service) => (
               <Link key={service.id} href={`/services/${service.id}`}>
                 <Card className="h-full glass glass-hover group cursor-pointer">
                   <CardContent className="p-5">
@@ -210,14 +235,14 @@ export default async function LandingPage() {
                         <span className="text-xs font-medium">4.9</span>
                       </div>
                     </div>
-                    
+
                     <h3 className="font-semibold mb-1 group-hover:text-primary transition-colors">
                       {service.title}
                     </h3>
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                       {service.description}
                     </p>
-                    
+
                     <div className="flex items-center justify-between pt-3 border-t border-border/50">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Clock className="h-3.5 w-3.5" />
@@ -255,20 +280,20 @@ export default async function LandingPage() {
                 step: "01",
                 title: "Choose a Service",
                 description: "Browse our marketplace and find the perfect service for your needs.",
-                icon: Search
+                icon: Search,
               },
               {
-                step: "02", 
+                step: "02",
                 title: "Place Your Order",
                 description: "Customize your order, select add-ons, and checkout securely.",
-                icon: Shield
+                icon: Shield,
               },
               {
                 step: "03",
                 title: "Track Progress",
                 description: "Chat with your PRO and track your order in real-time.",
-                icon: Play
-              }
+                icon: Play,
+              },
             ].map((item) => (
               <div key={item.step} className="relative p-6 rounded-xl bg-card/50 border border-border/30">
                 <div className="absolute -top-3 left-6 px-2 py-0.5 bg-primary text-primary-foreground text-xs font-bold rounded">
