@@ -1,5 +1,5 @@
 import { Suspense } from "react"
-import { createClient } from "@/lib/supabase/server"
+import { sql } from "@/lib/neon/server"
 import { AppLayout } from "@/components/app-layout"
 import { ServicesContent } from "@/components/services/services-content"
 import type { Profile, UserRole, Game } from "@/lib/types"
@@ -9,44 +9,48 @@ interface PageProps {
 }
 
 export default async function ServicesPage({ searchParams }: PageProps) {
-  const supabase = await createClient()
   const params = await searchParams
   
-  const { data: { user } } = await supabase.auth.getUser()
-
   let userProfile: Profile | null = null
+  let games: any[] = []
+  let services: any[] = []
 
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single()
+  try {
+    // Fetch games for filter
+    games = await sql`
+      SELECT * FROM games
+      WHERE is_active = true
+      ORDER BY sort_order ASC
+    `
 
-    userProfile = profile || {
-      id: user.id,
-      email: user.email || "",
-      username: user.user_metadata?.username || null,
-      avatar_url: null,
-      role: (user.user_metadata?.role as UserRole) || "client",
-      balance_cents: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+    // Build services query with filters
+    let query = `
+      SELECT s.*, g.name as game_name
+      FROM services s
+      LEFT JOIN games g ON s.game_id = g.id
+      WHERE s.is_active = true
+    `
+    
+    const values: any[] = []
+    
+    if (params.game) {
+      query += ` AND g.slug = $${values.length + 1}`
+      values.push(params.game)
     }
+    
+    if (params.category) {
+      query += ` AND s.category = $${values.length + 1}`
+      values.push(params.category)
+    }
+    
+    query += ` ORDER BY s.created_at DESC`
+    
+    services = values.length > 0 
+      ? await sql(query, values) 
+      : await sql(query)
+  } catch (error) {
+    console.error('Database error:', error)
   }
-
-  // Fetch games for filter
-  const { data: games } = await supabase
-    .from("games")
-    .select("*")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true })
-
-  // Build services query
-  let servicesQuery = supabase
-    .from("services")
-    .select("*, game_info:games(*)")
-    .eq("is_active", true)
 
   // Apply game filter
   if (params.game) {
