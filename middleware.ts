@@ -1,36 +1,44 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { jwtVerify } from 'jose'
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key')
 
 export async function middleware(request: NextRequest) {
-  // Get token from cookies
-  const token = request.cookies.get('auth_token')?.value
+  // Get user_id from cookies (set during login/register)
+  const userId = request.cookies.get('user_id')?.value
 
   // Paths that don't need authentication
-  const publicPaths = ['/auth/login', '/auth/register', '/auth/admin', '/auth/verify', '/', '/games', '/services', '/about', '/grid.svg']
-  const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path))
+  const publicPaths = [
+    '/auth/login', 
+    '/auth/register', 
+    '/auth/admin', 
+    '/auth/verify', 
+    '/', 
+    '/games', 
+    '/services', 
+    '/explore',
+    '/about',
+    '/api/auth',
+    '/grid.svg'
+  ]
+  
+  const isPublicPath = publicPaths.some(path => 
+    request.nextUrl.pathname === path || 
+    request.nextUrl.pathname.startsWith(path + '/')
+  )
 
+  // Allow public paths
   if (isPublicPath) {
     return NextResponse.next()
   }
 
-  // If no token and requesting protected path, redirect to login
-  if (!token) {
+  // If no user_id and requesting protected path, redirect to login
+  if (!userId) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
-  // Verify token (optional - for now just pass through)
-  try {
-    if (token) {
-      await jwtVerify(token, JWT_SECRET)
-    }
-  } catch (err) {
-    // Invalid token - redirect to login
-    return NextResponse.redirect(new URL('/auth/login', request.url))
-  }
-
-  return NextResponse.next()
+  // Add user_id to request headers for API routes
+  const response = NextResponse.next()
+  response.headers.set('x-user-id', userId)
+  
+  return response
 }
 
 export const config = {
