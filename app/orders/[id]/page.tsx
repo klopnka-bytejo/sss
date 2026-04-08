@@ -47,7 +47,7 @@ const statusIcons: Record<string, typeof AlertCircle> = {
 
 export default function OrderChatPage() {
   const params = useParams()
-  const orderId = params.orderId as string
+  const orderId = params.id as string
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const [order, setOrder] = useState<any>(null)

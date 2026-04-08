@@ -3,10 +3,10 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ orderId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { orderId } = await params
+    const { id: orderId } = await params
     const userId = request.headers.get('x-user-id')
 
     if (!userId) {
@@ -57,10 +57,10 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ orderId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { orderId } = await params
+    const { id: orderId } = await params
     const userId = request.headers.get('x-user-id')
 
     if (!userId) {
