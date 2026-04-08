@@ -1,14 +1,15 @@
-"use server"
-
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { stripe } from "@/lib/stripe"
+import Stripe from "stripe"
 
-// POST - Create a deposit checkout session
+export const dynamic = "force-dynamic"
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
     if (!user) {
       return NextResponse.json(
@@ -34,14 +35,19 @@ export async function POST(request: Request) {
       )
     }
 
-    // Get user profile
     const { data: profile } = await supabase
       .from("profiles")
       .select("id, email, display_name")
       .eq("id", user.id)
       .single()
 
-    // Create Stripe checkout session for wallet deposit
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: "2025-02-24.acacia",
+    })
+
+    const baseUrl =
+      process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -64,8 +70,8 @@ export async function POST(request: Request) {
         amountCents: amountCents.toString(),
       },
       customer_email: profile?.email || user.email,
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/wallet?deposit=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/wallet?deposit=cancelled`,
+      success_url: `${baseUrl}/wallet?deposit=success`,
+      cancel_url: `${baseUrl}/wallet?deposit=cancelled`,
     })
 
     return NextResponse.json({
