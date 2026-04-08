@@ -1,10 +1,9 @@
 import { neon } from '@neondatabase/serverless'
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable is required')
-}
-
-const sql = neon(process.env.DATABASE_URL)
+// Create SQL client only if DATABASE_URL is available
+const sql = process.env.DATABASE_URL 
+  ? neon(process.env.DATABASE_URL)
+  : async () => [] // Return empty results if not configured
 
 export { sql }
 export default sql
