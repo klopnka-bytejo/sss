@@ -1,5 +1,6 @@
 'use client'
 
+// Order chat page - client and pro communication
 import { useEffect, useRef, useState } from 'react'
 import { AppLayout } from '@/components/app-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
