@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -58,53 +57,37 @@ export default function RegisterPage() {
     setLoading(true)
     setError(null)
 
-    const supabase = createClient()
-    
-    // Sign up with Supabase
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: formData.email,
-      password: formData.password,
-      options: {
-        data: {
-          full_name: formData.fullName,
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          displayName: formData.fullName,
           role: role,
-        },
-      },
-    })
+        }),
+      })
 
-    if (authError) {
-      setError(authError.message)
-      setLoading(false)
-      return
-    }
+      const data = await res.json()
 
-    // Create profile
-    if (authData.user) {
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          full_name: formData.fullName,
-          role: role,
-        })
-        .eq("id", authData.user.id)
-
-      if (profileError) {
-        console.error("Profile update error:", profileError)
+      if (!res.ok) {
+        setError(data.error || 'Registration failed')
+        setLoading(false)
+        return
       }
-    }
 
-    router.push("/dashboard")
-    router.refresh()
+      router.push("/dashboard")
+      router.refresh()
+    } catch (err) {
+      setError('An error occurred. Please try again.')
+      setLoading(false)
+    }
   }
 
   const handleSocialLogin = async (provider: "google" | "discord") => {
-    const supabase = createClient()
-    await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    })
+    // Social login not available with custom auth
+    setError('Social login is not available. Please use email and password.')
   }
 
   return (
