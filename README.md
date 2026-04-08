@@ -1,4 +1,4 @@
-# VetCRM - Veterinary Clinic Management System
+# VetCRM - Veterinary Clinic Management Systemm
 
 A comprehensive CRM solution for veterinary clinics built with Next.js, Tailwind CSS, and shadcn/ui.
 
