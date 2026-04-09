@@ -58,21 +58,24 @@ export function AdminSidebar() {
             const Icon = item.icon
             const isActive = pathname === item.href
             const isMessages = item.label === 'Messages'
+            const isOnMessagesPage = pathname.includes('/chat-monitoring')
+            const showBadge = isMessages && unreadCount > 0 && !isOnMessagesPage
+            
             return (
               <Link key={item.href} href={item.href}>
                 <Button
                   variant={isActive ? 'default' : 'ghost'}
                   className={cn(
-                    'w-full justify-start text-left relative',
+                    'w-full justify-start text-left',
                     isActive && 'bg-primary text-primary-foreground'
                   )}
                 >
                   <Icon className="mr-2 h-4 w-4" />
-                  {item.label}
-                  {isMessages && unreadCount > 0 && (
+                  <span className="flex-1">{item.label}</span>
+                  {showBadge && (
                     <Badge 
                       variant="destructive" 
-                      className="absolute -top-1 right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                      className="h-5 min-w-5 px-1.5 flex items-center justify-center text-xs ml-auto"
                     >
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </Badge>

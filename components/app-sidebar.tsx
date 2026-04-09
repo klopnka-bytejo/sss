@@ -141,16 +141,19 @@ export function AppSidebar({ userRole = 'client' }: AppSidebarProps) {
                 const isActive = pathname === item.href || 
                   (item.href !== '/dashboard' && pathname.startsWith(item.href))
                 const isMessages = item.title === 'Messages'
+                const isOnMessagesPage = pathname.includes('/messages')
+                const showBadge = isMessages && unreadCount > 0 && !isOnMessagesPage
+                
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild isActive={isActive}>
-                      <Link href={item.href} onClick={handleNavClick} className="relative">
+                      <Link href={item.href} onClick={handleNavClick} className="flex items-center gap-2">
                         <item.icon className="size-4" />
-                        <span>{item.title}</span>
-                        {isMessages && unreadCount > 0 && (
+                        <span className="flex-1">{item.title}</span>
+                        {showBadge && (
                           <Badge 
                             variant="destructive" 
-                            className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                            className="h-5 min-w-5 px-1.5 flex items-center justify-center text-xs ml-auto"
                           >
                             {unreadCount > 9 ? '9+' : unreadCount}
                           </Badge>

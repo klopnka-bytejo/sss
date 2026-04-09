@@ -74,9 +74,13 @@ export default function AdminChatMonitoringPage() {
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation) return
 
+    console.log('[v0] Sending message:', {
+      recipientId: selectedConversation.participant_1_id,
+      messageLength: newMessage.length,
+    })
+
     setSending(true)
     try {
-      // Send to participant_1 (usually the client)
       const res = await fetch('/api/messages/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -87,12 +91,16 @@ export default function AdminChatMonitoringPage() {
         }),
       })
 
+      const data = await res.json()
+      console.log('[v0] Send response:', { status: res.status, data })
+
       if (res.ok) {
+        console.log('[v0] Message sent successfully')
         setNewMessage('')
         fetchMessages(selectedConversation.id)
         fetchConversations()
       } else {
-        console.error('[v0] Failed to send message')
+        console.error('[v0] Failed to send message:', data)
       }
     } catch (error) {
       console.error('[v0] Failed to send message:', error)
