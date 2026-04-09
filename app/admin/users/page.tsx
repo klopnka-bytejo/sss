@@ -22,7 +22,7 @@ export default async function AdminUsersPage() {
     redirect("/dashboard")
   }
 
-  const userProfile = adminUsers[0]
+  const adminProfile = adminUsers[0]
 
   // Fetch all users
   const users = await sql`
@@ -36,7 +36,7 @@ export default async function AdminUsersPage() {
           <h1 className="text-3xl font-bold">User Management</h1>
           <p className="text-muted-foreground">Manage all users and PROs on the platform</p>
         </div>
-        <AdminUsersContent users={users || []} />
+        <AdminUsersContent users={users || []} currentUser={adminProfile} />
       </div>
     </AdminLayout>
   )
