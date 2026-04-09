@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { orderId } = await params
+    const { id } = await params
     const cookieStore = await cookies()
     const userId = cookieStore.get('user_id')?.value
 
@@ -24,24 +24,24 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get messages for this order
+    // Get messages for this conversation
     const messages = await sql`
       SELECT 
         m.id,
-        m.message,
-        m.is_system,
+        m.content,
         m.created_at,
+        m.is_read,
         p.display_name as sender_name,
         p.role as sender_role
-      FROM order_messages m
+      FROM messages m
       LEFT JOIN profiles p ON m.sender_id = p.id
-      WHERE m.order_id = ${orderId}
+      WHERE m.conversation_id = ${id}
       ORDER BY m.created_at ASC
     `
 
     return NextResponse.json({ messages: messages || [] })
   } catch (error) {
-    console.error('Message detail error:', error)
+    console.error('[v0] Message detail error:', error)
     return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 })
   }
 }
