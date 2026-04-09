@@ -1,8 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { sql } from '@/lib/neon/server'
 
-// GET - Fetch all disputes (admin only)
 export async function GET() {
   try {
     const cookieStore = await cookies()
@@ -12,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check admin role
+    // Check if user is admin
     const adminCheck = await sql`
       SELECT role FROM profiles WHERE id = ${userId}
     `
@@ -21,30 +20,33 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Fetch disputes with related data
-    const disputes = await sql`
+    // Fetch all orders with related data
+    const orders = await sql`
       SELECT 
-        d.id,
-        d.order_id,
-        d.opened_by,
-        d.reason,
-        d.status,
-        d.resolution,
-        d.created_at,
-        d.resolved_at,
+        o.id,
         o.order_number,
-        o.total_cents as amount_cents,
+        o.client_id,
+        o.pro_id,
+        o.service_id,
+        o.status,
+        o.total_cents,
+        o.payment_method,
+        o.payment_status,
+        o.created_at,
+        o.updated_at,
         p.email as client_email,
-        p.username as client_name
-      FROM disputes d
-      LEFT JOIN orders o ON d.order_id = o.id
+        p.username as client_name,
+        s.title as service_title
+      FROM orders o
       LEFT JOIN profiles p ON o.client_id = p.id
-      ORDER BY d.created_at DESC
+      LEFT JOIN services s ON o.service_id = s.id
+      ORDER BY o.created_at DESC
+      LIMIT 100
     `
 
-    return NextResponse.json({ disputes: disputes || [] })
+    return NextResponse.json({ orders: orders || [] })
   } catch (error) {
-    console.error('Admin disputes error:', error)
+    console.error('Admin orders error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -1,136 +1,108 @@
-import { createClient } from "@/lib/supabase/server"
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { sql } from '@/lib/neon/server'
 
 // GET /api/admin/users - Get all users with filters
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const cookieStore = await cookies()
+    const userId = cookieStore.get('user_id')?.value
     
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Check if admin
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single()
+    const adminCheck = await sql`
+      SELECT role FROM profiles WHERE id = ${userId}
+    `
 
-    if (profile?.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    if (!adminCheck || adminCheck.length === 0 || adminCheck[0].role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)
-    const role = searchParams.get("role")
-    const status = searchParams.get("status")
-    const search = searchParams.get("search")
+    const role = searchParams.get('role')
+    const search = searchParams.get('search')
 
-    let query = supabase
-      .from("profiles")
-      .select("*")
-      .order("created_at", { ascending: false })
+    // Build query with filters
+    let query = 'SELECT * FROM profiles WHERE 1=1'
+    const params: any[] = []
 
-    if (role && role !== "all") {
-      query = query.eq("role", role)
-    }
-
-    if (status === "suspended") {
-      query = query.eq("is_suspended", true)
-    } else if (status === "active") {
-      query = query.eq("is_suspended", false)
+    if (role && role !== 'all') {
+      query += ' AND role = $' + (params.length + 1)
+      params.push(role)
     }
 
     if (search) {
-      query = query.or(`email.ilike.%${search}%,username.ilike.%${search}%`)
+      query += ' AND (email ILIKE $' + (params.length + 1) + ' OR username ILIKE $' + (params.length + 2) + ')'
+      params.push(`%${search}%`)
+      params.push(`%${search}%`)
     }
 
-    const { data: users, error } = await query.limit(100)
+    query += ' ORDER BY created_at DESC LIMIT 100'
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+    const users = params.length > 0 
+      ? await sql(query, params)
+      : await sql(query)
 
-    return NextResponse.json({ users })
+    return NextResponse.json({ users: users || [] })
   } catch (error) {
-    console.error("Admin users error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error('Admin users error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
 // PATCH /api/admin/users - Update user (suspend/unsuspend, change role)
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const cookieStore = await cookies()
+    const userId = cookieStore.get('user_id')?.value
     
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Check if admin
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single()
+    const adminCheck = await sql`
+      SELECT role FROM profiles WHERE id = ${userId}
+    `
 
-    if (profile?.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    if (!adminCheck || adminCheck.length === 0 || adminCheck[0].role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const body = await request.json()
-    const { userId, action, newRole, reason } = body
+    const { targetUserId, action, newRole, reason } = body
 
-    if (!userId || !action) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    if (!targetUserId || !action) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    let updateData: Record<string, unknown> = {}
-    let auditAction = ""
+    // Validate action and prepare update
+    let updateQuery = 'UPDATE profiles SET'
+    const params: any[] = []
 
     switch (action) {
-      case "suspend":
-        updateData = { is_suspended: true, suspended_at: new Date().toISOString(), suspension_reason: reason }
-        auditAction = "user_suspended"
-        break
-      case "unsuspend":
-        updateData = { is_suspended: false, suspended_at: null, suspension_reason: null }
-        auditAction = "user_unsuspended"
-        break
-      case "change_role":
-        if (!newRole || !["client", "pro", "admin"].includes(newRole)) {
-          return NextResponse.json({ error: "Invalid role" }, { status: 400 })
+      case 'change_role':
+        if (!newRole || !['client', 'pro', 'admin'].includes(newRole)) {
+          return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
         }
-        updateData = { role: newRole }
-        auditAction = "user_role_changed"
+        updateQuery += ' role = $1'
+        params.push(newRole)
         break
       default:
-        return NextResponse.json({ error: "Invalid action" }, { status: 400 })
+        return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
 
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update(updateData)
-      .eq("id", userId)
+    updateQuery += ' WHERE id = $' + (params.length + 1)
+    params.push(targetUserId)
 
-    if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 })
-    }
-
-    // Log audit
-    await supabase.from("audit_logs").insert({
-      action: auditAction,
-      entity_type: "user",
-      entity_id: userId,
-      user_id: user.id,
-      details: { action, reason, newRole },
-    })
+    await sql(updateQuery, params)
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("Admin users update error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error('Admin users update error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

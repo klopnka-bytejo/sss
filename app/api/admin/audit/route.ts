@@ -1,34 +1,39 @@
-import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { sql } from '@/lib/neon/server'
 
 export async function GET() {
-  const supabase = await createClient()
-  
-  // Verify admin
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  try {
+    const cookieStore = await cookies()
+    const userId = cookieStore.get('user_id')?.value
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Verify admin
+    const adminCheck = await sql`
+      SELECT role FROM profiles WHERE id = ${userId}
+    `
+
+    if (!adminCheck || adminCheck.length === 0 || adminCheck[0].role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const logs = await sql`
+      SELECT 
+        al.*,
+        p.username,
+        p.email
+      FROM admin_audit_log al
+      LEFT JOIN profiles p ON al.admin_id = p.id
+      ORDER BY al.created_at DESC
+      LIMIT 500
+    `
+
+    return NextResponse.json({ logs: logs || [] })
+  } catch (error) {
+    console.error('Audit log error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single()
-
-  if (profile?.role !== "admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-  }
-
-  const { data: logs, error } = await supabase
-    .from("audit_logs")
-    .select("*, profiles(username, email)")
-    .order("created_at", { ascending: false })
-    .limit(500)
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  return NextResponse.json({ logs })
 }
