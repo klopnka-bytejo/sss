@@ -36,6 +36,7 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Important: include credentials for cookies
         body: JSON.stringify({ email, password, role }),
       })
 
@@ -47,9 +48,12 @@ export default function LoginPage() {
         return
       }
 
-      // Use window.location for a full page reload to ensure cookies are recognized
-      window.location.href = "/dashboard"
+      // Wait a bit for cookie to be set, then redirect
+      setTimeout(() => {
+        router.push("/dashboard")
+      }, 500)
     } catch (err) {
+      console.error('[v0] Login error:', err)
       setError('An error occurred. Please try again.')
       setLoading(false)
     }
