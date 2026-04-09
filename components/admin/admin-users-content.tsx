@@ -63,6 +63,40 @@ export function AdminUsersContent({ users: initialUsers, currentUser }: AdminUse
     })
   }
 
+  const handleSendEmail = async (user: Profile) => {
+    const subject = prompt("Email subject:")
+    if (!subject) return
+
+    const body = prompt("Email body:")
+    if (!body) return
+
+    setLoading(true)
+    try {
+      const response = await fetch('/api/admin/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          userEmail: user.email,
+          userName: user.display_name || 'User',
+          subject,
+          body
+        })
+      })
+
+      if (response.ok) {
+        alert('Email sent successfully!')
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to send email')
+      }
+    } catch (error) {
+      alert('Error sending email')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleUpdateRole = async (userId: string, newRole: UserRole) => {
     if (userId === currentUser.id) {
       alert("You cannot change your own role")
@@ -161,7 +195,10 @@ export function AdminUsersContent({ users: initialUsers, currentUser }: AdminUse
                         <DropdownMenuContent align="end" className="w-56">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem disabled className="opacity-50">
+                          <DropdownMenuItem 
+                            onClick={() => handleSendEmail(user)}
+                            disabled={loading}
+                          >
                             <Mail className="mr-2 h-4 w-4" />
                             Send Email
                           </DropdownMenuItem>
@@ -182,13 +219,6 @@ export function AdminUsersContent({ users: initialUsers, currentUser }: AdminUse
                           >
                             <Shield className="mr-2 h-4 w-4" />
                             Set as PRO
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleUpdateRole(user.id, "admin")}
-                            disabled={user.role === "admin" || user.id === currentUser.id || loading}
-                          >
-                            <Shield className="mr-2 h-4 w-4 text-destructive" />
-                            Set as Admin
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
