@@ -54,13 +54,11 @@ export async function POST(request: NextRequest) {
       INSERT INTO messages (
         conversation_id,
         sender_id,
-        recipient_id,
         content,
         created_at
       ) VALUES (
         ${conversationId},
         ${userId},
-        ${recipientId},
         ${message.trim()},
         NOW()
       )
@@ -76,8 +74,8 @@ export async function POST(request: NextRequest) {
 
     // Log in audit log
     await sql`
-      INSERT INTO admin_audit_log (action, entity_type, entity_id, details, created_at)
-      VALUES ('message_sent', 'message', ${newMessage[0].id}, ${JSON.stringify({
+      INSERT INTO admin_audit_log (admin_id, action, entity_type, entity_id, details, created_at)
+      VALUES (${userId}, 'message_sent', 'message', ${newMessage[0].id}, ${JSON.stringify({
         sender_id: userId,
         recipient_id: recipientId,
         conversation_id: conversationId
