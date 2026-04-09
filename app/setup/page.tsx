@@ -1,12 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
 
 export default function SetupPage() {
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [message, setMessage] = useState('')
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('loading')
+  const [message, setMessage] = useState('Running database migration...')
+
+  useEffect(() => {
+    // Auto-run migration on page load
+    runMigration()
+  }, [])
 
   const runMigration = async () => {
     setStatus('loading')
@@ -21,7 +27,11 @@ export default function SetupPage() {
 
       if (response.ok) {
         setStatus('success')
-        setMessage('Migration completed successfully! Tables created.')
+        setMessage('Migration completed successfully! All tables created.')
+        // Auto-redirect after 2 seconds
+        setTimeout(() => {
+          window.location.href = '/admin/users'
+        }, 2000)
       } else {
         setStatus('error')
         setMessage(data.error || 'Migration failed')
@@ -38,34 +48,50 @@ export default function SetupPage() {
         <CardHeader>
           <CardTitle>Database Setup</CardTitle>
           <CardDescription>
-            Run this to create the necessary database tables for the messaging system.
+            Initializing messaging system tables
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <Button 
-            onClick={runMigration} 
-            disabled={status === 'loading'}
-            className="w-full"
-          >
-            {status === 'loading' ? 'Running Migration...' : 'Run Migration'}
-          </Button>
+        <CardContent className="space-y-6">
+          <div className="flex flex-col items-center gap-4">
+            {status === 'loading' && (
+              <>
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground text-center">{message}</p>
+              </>
+            )}
 
-          {message && (
-            <div className={`p-3 rounded-lg text-sm ${
-              status === 'success' 
-                ? 'bg-green-500/20 text-green-500' 
-                : status === 'error' 
-                  ? 'bg-red-500/20 text-red-500'
-                  : 'bg-blue-500/20 text-blue-500'
-            }`}>
-              {message}
+            {status === 'success' && (
+              <>
+                <CheckCircle2 className="h-8 w-8 text-green-500" />
+                <p className="text-sm text-green-600 text-center font-medium">{message}</p>
+                <p className="text-xs text-muted-foreground text-center">Redirecting to admin dashboard...</p>
+              </>
+            )}
+
+            {status === 'error' && (
+              <>
+                <AlertCircle className="h-8 w-8 text-destructive" />
+                <p className="text-sm text-destructive text-center font-medium">{message}</p>
+              </>
+            )}
+          </div>
+
+          {status === 'error' && (
+            <div className="flex gap-2">
+              <Button 
+                onClick={runMigration}
+                className="w-full"
+              >
+                Retry
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => window.location.href = '/admin/users'}
+                className="w-full"
+              >
+                Skip
+              </Button>
             </div>
-          )}
-
-          {status === 'success' && (
-            <Button variant="outline" className="w-full" asChild>
-              <a href="/admin/users">Go to Admin Users</a>
-            </Button>
           )}
         </CardContent>
       </Card>
