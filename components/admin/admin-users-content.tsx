@@ -22,13 +22,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { SendMessageDialog } from "@/components/messaging/send-message-dialog"
 import { 
   Search, 
-  Users,
   MoreVertical,
   Shield,
   UserCheck,
-  Mail
+  MessageSquare
 } from "lucide-react"
 import type { Profile, UserRole } from "@/lib/types"
 
@@ -47,6 +47,8 @@ export function AdminUsersContent({ users: initialUsers, currentUser }: AdminUse
   const [users, setUsers] = useState(initialUsers)
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(false)
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<Profile | null>(null)
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch = 
@@ -63,38 +65,9 @@ export function AdminUsersContent({ users: initialUsers, currentUser }: AdminUse
     })
   }
 
-  const handleSendEmail = async (user: Profile) => {
-    const subject = prompt("Email subject:")
-    if (!subject) return
-
-    const body = prompt("Email body:")
-    if (!body) return
-
-    setLoading(true)
-    try {
-      const response = await fetch('/api/admin/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.id,
-          userEmail: user.email,
-          userName: user.display_name || 'User',
-          subject,
-          body
-        })
-      })
-
-      if (response.ok) {
-        alert('Email sent successfully!')
-      } else {
-        const error = await response.json()
-        alert(error.error || 'Failed to send email')
-      }
-    } catch (error) {
-      alert('Error sending email')
-    } finally {
-      setLoading(false)
-    }
+  const handleOpenMessage = (user: Profile) => {
+    setSelectedUser(user)
+    setMessageDialogOpen(true)
   }
 
   const handleUpdateRole = async (userId: string, newRole: UserRole) => {
@@ -134,102 +107,113 @@ export function AdminUsersContent({ users: initialUsers, currentUser }: AdminUse
   }
 
   return (
-    <div className="space-y-6">
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search users by name or email..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9"
-        />
+    <>
+      <div className="space-y-6">
+        {/* Search */}
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search users by name or email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+
+        {/* Users Table */}
+        <Card>
+          <CardContent className="p-0">
+            {filteredUsers.length === 0 ? (
+              <div className="flex items-center justify-center py-12 text-muted-foreground">
+                No users found
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Joined</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.avatar_url || undefined} />
+                            <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                              {getInitials(user)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <p className="font-medium">{user.display_name || 'Unknown'}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{user.email}</TableCell>
+                      <TableCell>
+                        <Badge className={roleColors[user.role] || roleColors.client}>
+                          {(user.role || 'client').toUpperCase()}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">{formatDate(user.created_at)}</TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" disabled={loading}>
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => handleOpenMessage(user)}
+                              disabled={loading}
+                            >
+                              <MessageSquare className="mr-2 h-4 w-4" />
+                              Send Message
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuLabel className="text-xs text-muted-foreground">
+                              Change Role
+                            </DropdownMenuLabel>
+                            <DropdownMenuItem 
+                              onClick={() => handleUpdateRole(user.id, "client")}
+                              disabled={user.role === "client" || user.id === currentUser.id || loading}
+                            >
+                              <UserCheck className="mr-2 h-4 w-4" />
+                              Set as Client
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleUpdateRole(user.id, "pro")}
+                              disabled={user.role === "pro" || user.id === currentUser.id || loading}
+                            >
+                              <Shield className="mr-2 h-4 w-4" />
+                              Set as PRO
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Users Table */}
-      <Card>
-        <CardContent className="p-0">
-          {filteredUsers.length === 0 ? (
-            <div className="flex items-center justify-center py-12 text-muted-foreground">
-              No users found
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.avatar_url || undefined} />
-                          <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
-                            {getInitials(user)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <p className="font-medium">{user.display_name || 'Unknown'}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{user.email}</TableCell>
-                    <TableCell>
-                      <Badge className={roleColors[user.role] || roleColors.client}>
-                        {(user.role || 'client').toUpperCase()}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm">{formatDate(user.created_at)}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" disabled={loading}>
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={() => handleSendEmail(user)}
-                            disabled={loading}
-                          >
-                            <Mail className="mr-2 h-4 w-4" />
-                            Send Email
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuLabel className="text-xs text-muted-foreground">
-                            Change Role
-                          </DropdownMenuLabel>
-                          <DropdownMenuItem 
-                            onClick={() => handleUpdateRole(user.id, "client")}
-                            disabled={user.role === "client" || user.id === currentUser.id || loading}
-                          >
-                            <UserCheck className="mr-2 h-4 w-4" />
-                            Set as Client
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleUpdateRole(user.id, "pro")}
-                            disabled={user.role === "pro" || user.id === currentUser.id || loading}
-                          >
-                            <Shield className="mr-2 h-4 w-4" />
-                            Set as PRO
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+      {/* Message Dialog */}
+      {selectedUser && (
+        <SendMessageDialog
+          open={messageDialogOpen}
+          onOpenChange={setMessageDialogOpen}
+          recipient={selectedUser}
+        />
+      )}
+    </>
   )
 }
