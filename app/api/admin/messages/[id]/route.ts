@@ -30,7 +30,7 @@ export async function GET(
         m.id,
         m.content,
         m.created_at,
-        m.is_read,
+        m.read,
         p.display_name as sender_name,
         p.role as sender_role
       FROM messages m
