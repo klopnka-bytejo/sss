@@ -1,54 +1,43 @@
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
-import { AppLayout } from "@/components/app-layout"
+import { cookies } from "next/headers"
+import { sql } from "@/lib/neon/server"
+import { AdminLayout } from "@/components/admin/admin-layout"
 import { AdminUsersContent } from "@/components/admin/admin-users-content"
-import type { Profile, UserRole } from "@/lib/types"
+import type { Profile } from "@/lib/types"
 
 export default async function AdminUsersPage() {
-  const supabase = await createClient()
+  const cookieStore = await cookies()
+  const userId = cookieStore.get('user_id')?.value
   
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    redirect("/auth/login")
+  if (!userId) {
+    redirect("/auth/admin")
   }
 
-  // Fetch user profile
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single()
+  // Fetch admin profile
+  const adminUsers = await sql`
+    SELECT * FROM profiles WHERE id = ${userId}
+  `
 
-  const userProfile: Profile = profile || {
-    id: user.id,
-    email: user.email || "",
-    username: user.user_metadata?.username || null,
-    avatar_url: null,
-    role: (user.user_metadata?.role as UserRole) || "client",
-    balance_cents: 0,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  }
-
-  // Only allow admin users
-  if (userProfile.role !== "admin") {
+  if (!adminUsers || adminUsers.length === 0 || adminUsers[0].role !== "admin") {
     redirect("/dashboard")
   }
 
+  const userProfile = adminUsers[0]
+
   // Fetch all users
-  const { data: users } = await supabase
-    .from("profiles")
-    .select("*")
-    .order("created_at", { ascending: false })
+  const users = await sql`
+    SELECT * FROM profiles ORDER BY created_at DESC
+  `
 
   return (
-    <AppLayout 
-      breadcrumbs={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Users" }]} 
-      userRole={userProfile.role}
-      user={userProfile}
-    >
-      <AdminUsersContent users={users || []} currentUser={userProfile} />
-    </AppLayout>
+    <AdminLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">User Management</h1>
+          <p className="text-muted-foreground">Manage all users and PROs on the platform</p>
+        </div>
+        <AdminUsersContent users={users || []} />
+      </div>
+    </AdminLayout>
   )
 }

@@ -1,61 +1,24 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { AppLayout } from "@/components/app-layout"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Percent, Plus, Pencil, Trash2, Loader2, Tag, Calendar } from "lucide-react"
-import { formatCurrency } from "@/lib/utils"
+import { AdminLayout } from '@/components/admin/admin-layout'
+import { Card, CardContent } from '@/components/ui/card'
 
-interface Discount {
-  id: string
-  title: string
-  description?: string
-  discount_type: "percentage" | "fixed"
-  discount_value: number
-  target_type: "game" | "service"
-  target_id?: string
-  start_date?: string
-  end_date?: string
-  is_active: boolean
-  priority: number
-  min_order_amount: number
-  max_discount_amount?: number
-  usage_limit?: number
-  usage_count: number
-}
-
-interface Game {
-  id: string
-  name: string
-}
-
-interface Service {
-  id: string
-  title: string
-  game: string
+export default function AdminDiscountsPage() {
+  return (
+    <AdminLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Discounts Management</h1>
+          <p className="text-muted-foreground">Manage promotional discounts and coupons</p>
+        </div>
+        <Card>
+          <CardContent className="pt-6 text-center text-muted-foreground py-12">
+            Discounts management coming soon
+          </CardContent>
+        </Card>
+      </div>
+    </AdminLayout>
+  )
 }
 
 export default function AdminDiscountsPage() {

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
 import { sql } from "@/lib/neon/server"
-import { AppLayout } from "@/components/app-layout"
+import { AdminLayout } from "@/components/admin/admin-layout"
 import { AdminDashboard } from "@/components/admin/admin-dashboard"
 import type { Profile } from "@/lib/types"
 
@@ -53,16 +53,13 @@ export default async function AdminPage() {
   }
 
   return (
-    <AppLayout 
-      breadcrumbs={[{ label: "Admin Dashboard" }]} 
-      userRole={userProfile.role}
-      user={userProfile}
-    >
+    <AdminLayout>
       <AdminDashboard 
         stats={stats} 
         recentOrders={stats.recentOrders} 
         recentUsers={stats.recentUsers} 
       />
-    </AppLayout>
+    </AdminLayout>
   )
+}
 }
