@@ -31,6 +31,7 @@ const COUNTRIES = [
 type FormData = {
   fullName: string
   email: string
+  password: string
   discordUsername: string
   gamerTag: string
   games: string[]
@@ -45,6 +46,7 @@ export default function BecomeProPage() {
   const [formData, setFormData] = useState<FormData>({
     fullName: '',
     email: '',
+    password: '',
     discordUsername: '',
     gamerTag: '',
     games: [],
