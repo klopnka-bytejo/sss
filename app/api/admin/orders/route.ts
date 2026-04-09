@@ -31,7 +31,6 @@ export async function GET() {
         o.status,
         o.amount_cents,
         o.payment_method,
-        o.payment_status,
         o.created_at,
         o.updated_at,
         c.email as client_email,

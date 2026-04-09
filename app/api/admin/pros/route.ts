@@ -27,11 +27,13 @@ export async function GET(request: NextRequest) {
         p.email,
         p.display_name as username,
         p.role,
-        p.status,
+        pp.status,
         p.created_at,
-        pp.balance_cents,
-        pp.total_earned_cents,
-        pp.completed_orders
+        p.balance_cents,
+        p.total_earned_cents,
+        pp.total_orders as completed_orders,
+        pp.rating,
+        pp.total_reviews
       FROM profiles p
       LEFT JOIN pro_profiles pp ON p.id = pp.user_id
       WHERE p.role = 'pro'
