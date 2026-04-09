@@ -5,7 +5,7 @@ import { cookies } from 'next/headers'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json()
+    const { email, password, role } = await request.json()
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
@@ -23,6 +23,11 @@ export async function POST(request: NextRequest) {
     }
 
     const user = users[0]
+
+    // If admin role requested, verify user is admin
+    if (role === 'admin' && user.role !== 'admin') {
+      return NextResponse.json({ error: 'Access denied. Admin credentials required.' }, { status: 403 })
+    }
 
     // Verify password
     if (!user.password_hash) {

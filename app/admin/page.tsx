@@ -1,35 +1,28 @@
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { cookies } from "next/headers"
+import { sql } from "@/lib/neon/server"
 import { AppLayout } from "@/components/app-layout"
 import { AdminDashboard } from "@/components/admin/admin-dashboard"
-import type { Profile, UserRole } from "@/lib/types"
+import type { Profile } from "@/lib/types"
 
 export default async function AdminPage() {
-  const supabase = await createClient()
+  const cookieStore = await cookies()
+  const userId = cookieStore.get('user_id')?.value
   
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    redirect("/auth/login")
+  if (!userId) {
+    redirect("/auth/admin")
   }
 
   // Fetch user profile
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single()
+  const users = await sql`
+    SELECT * FROM profiles WHERE id = ${userId}
+  `
 
-  const userProfile: Profile = profile || {
-    id: user.id,
-    email: user.email || "",
-    username: user.user_metadata?.username || null,
-    avatar_url: null,
-    role: (user.user_metadata?.role as UserRole) || "client",
-    balance_cents: 0,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+  if (!users || users.length === 0) {
+    redirect("/auth/admin")
   }
+
+  const userProfile = users[0]
 
   // Only allow admin users
   if (userProfile.role !== "admin") {
@@ -38,29 +31,25 @@ export default async function AdminPage() {
 
   // Fetch stats
   const [
-    { count: totalUsers },
-    { count: totalOrders },
-    { count: totalPros },
-    { count: pendingDisputes },
-    { count: pendingWithdrawals },
-    { data: recentOrders },
-    { data: recentUsers },
+    totalUsersResult,
+    totalOrdersResult,
+    totalProsResult,
+    recentOrdersResult,
+    recentUsersResult,
   ] = await Promise.all([
-    supabase.from("profiles").select("*", { count: "exact", head: true }),
-    supabase.from("orders").select("*", { count: "exact", head: true }),
-    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "pro"),
-    supabase.from("disputes").select("*", { count: "exact", head: true }).eq("status", "open"),
-    supabase.from("withdrawals").select("*", { count: "exact", head: true }).eq("status", "pending"),
-    supabase.from("orders").select("*, client:profiles!orders_client_id_fkey(*), service:services(*)").order("created_at", { ascending: false }).limit(5),
-    supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(5),
+    sql`SELECT COUNT(*) as count FROM profiles`,
+    sql`SELECT COUNT(*) as count FROM orders`,
+    sql`SELECT COUNT(*) as count FROM profiles WHERE role = 'pro'`,
+    sql`SELECT * FROM orders ORDER BY created_at DESC LIMIT 5`,
+    sql`SELECT * FROM profiles ORDER BY created_at DESC LIMIT 5`,
   ])
 
   const stats = {
-    totalUsers: totalUsers || 0,
-    totalOrders: totalOrders || 0,
-    totalPros: totalPros || 0,
-    pendingDisputes: pendingDisputes || 0,
-    pendingWithdrawals: pendingWithdrawals || 0,
+    totalUsers: totalUsersResult[0]?.count || 0,
+    totalOrders: totalOrdersResult[0]?.count || 0,
+    totalPros: totalProsResult[0]?.count || 0,
+    recentOrders: recentOrdersResult || [],
+    recentUsers: recentUsersResult || [],
   }
 
   return (
@@ -71,8 +60,8 @@ export default async function AdminPage() {
     >
       <AdminDashboard 
         stats={stats} 
-        recentOrders={recentOrders || []} 
-        recentUsers={recentUsers || []} 
+        recentOrders={stats.recentOrders} 
+        recentUsers={stats.recentUsers} 
       />
     </AppLayout>
   )
