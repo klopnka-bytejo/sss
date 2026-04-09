@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AlertCircle, Loader2, CheckCircle2 } from 'lucide-react'
+import { ThemeToggle } from '@/components/theme-toggle'
 import Link from 'next/link'
 
 function formatCurrency(cents: number) {
@@ -34,6 +35,7 @@ export default function CheckoutPage() {
   if (items.length === 0 && !orderPlaced) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <ThemeToggle />
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
             <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -93,6 +95,7 @@ export default function CheckoutPage() {
   if (orderPlaced) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <ThemeToggle />
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
             <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
@@ -119,6 +122,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-background pt-20 pb-12">
+      <ThemeToggle />
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
