@@ -303,6 +303,7 @@ export default function BecomeProPage() {
                           type="button"
                           onClick={(e) => {
                             e.preventDefault()
+                            e.stopPropagation()
                             toggleGame(game.id)
                           }}
                           className={`p-3 rounded-lg border-2 transition text-left ${
@@ -312,12 +313,15 @@ export default function BecomeProPage() {
                           }`}
                         >
                           <div className="flex items-center gap-2">
-                            <Checkbox 
-                              checked={isSelected}
-                              onCheckedChange={() => {}} 
-                              aria-hidden="true"
-                              tabIndex={-1}
-                            />
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                              isSelected 
+                                ? 'bg-primary border-primary' 
+                                : 'border-muted-foreground'
+                            }`}>
+                              {isSelected && (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-primary-foreground" />
+                              )}
+                            </div>
                             <span className="text-sm font-medium">{game.name}</span>
                           </div>
                         </button>
