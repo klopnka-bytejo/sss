@@ -2,59 +2,47 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { useCart } from "@/lib/contexts/cart-context"
 import { 
   Search, 
-  Trophy, 
-  Users, 
-  Zap,
   ShoppingCart,
-  Gamepad2,
   X
 } from "lucide-react"
-import type { Service, Profile, ServiceCategory, Game } from "@/lib/types"
 
 interface ServicesContentProps {
-  services: Service[]
-  games: Game[]
-  user: Profile | null
-  selectedGame?: string
+  services: any[]
   selectedCategory?: string
+  search?: string
 }
 
-const categoryIcons: Record<ServiceCategory, typeof Trophy> = {
-  boosting: Trophy,
-  coaching: Users,
-  account: Zap,
-}
-
-const categoryLabels: Record<ServiceCategory, string> = {
-  boosting: "Boosting",
-  coaching: "Coaching",
-  account: "Account",
-}
-
-const categories: ServiceCategory[] = ["boosting", "coaching", "account"]
+const categories = [
+  "Coaching",
+  "Consulting",
+  "Design",
+  "Development",
+  "Marketing",
+  "Writing",
+]
 
 export function ServicesContent({ 
   services, 
-  games, 
-  user, 
-  selectedGame,
-  selectedCategory 
+  selectedCategory,
+  search: initialSearch
 }: ServicesContentProps) {
   const router = useRouter()
-  const [searchQuery, setSearchQuery] = useState("")
+  const { addItem } = useCart()
+  const [searchQuery, setSearchQuery] = useState(initialSearch || "")
 
   const filteredServices = services.filter((service) => {
     const matchesSearch = service.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       service.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesSearch
+    const matchesCategory = !selectedCategory || service.category === selectedCategory
+    return matchesSearch && matchesCategory
   })
 
   const formatCurrency = (cents: number) => {
@@ -64,18 +52,29 @@ export function ServicesContent({
     }).format(cents / 100)
   }
 
-  const handleGameFilter = (gameSlug: string | null) => {
+  const handleCategoryFilter = (category: string | null) => {
     const params = new URLSearchParams()
-    if (gameSlug) params.set("game", gameSlug)
+    if (category) params.set("category", category)
+    if (searchQuery) params.set("search", searchQuery)
+    router.push(`/services${params.toString() ? `?${params.toString()}` : ""}`)
+  }
+
+  const handleSearch = (value: string) => {
+    setSearchQuery(value)
+    const params = new URLSearchParams()
+    if (value) params.set("search", value)
     if (selectedCategory) params.set("category", selectedCategory)
     router.push(`/services${params.toString() ? `?${params.toString()}` : ""}`)
   }
 
-  const handleCategoryFilter = (category: string | null) => {
-    const params = new URLSearchParams()
-    if (selectedGame) params.set("game", selectedGame)
-    if (category) params.set("category", category)
-    router.push(`/services${params.toString() ? `?${params.toString()}` : ""}`)
+  const handleBuyNow = (service: any) => {
+    addItem({
+      serviceId: service.id,
+      title: service.title,
+      price_cents: service.price_cents,
+      quantity: 1,
+    })
+    router.push("/checkout")
   }
 
   const clearFilters = () => {
@@ -83,15 +82,13 @@ export function ServicesContent({
     router.push("/services")
   }
 
-  const activeGame = games.find(g => g.slug === selectedGame)
-
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">
-            {activeGame ? activeGame.name : "All Services"}
+            {selectedCategory ? selectedCategory : "All Services"}
           </h1>
           <p className="text-muted-foreground mt-1">
             {filteredServices.length} services available
@@ -102,46 +99,9 @@ export function ServicesContent({
           <Input
             placeholder="Search services..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearch(e.target.value)}
             className="pl-9 bg-input"
           />
-        </div>
-      </div>
-
-      {/* Games Filter */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted-foreground">Filter by Game</h3>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant={!selectedGame ? "default" : "outline"}
-            size="sm"
-            onClick={() => handleGameFilter(null)}
-            className="h-auto py-2"
-          >
-            All Games
-          </Button>
-          {games.map((game) => (
-            <Button
-              key={game.id}
-              variant={selectedGame === game.slug ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleGameFilter(game.slug)}
-              className="h-auto py-2 gap-2"
-            >
-              {game.logo_url ? (
-                <Image
-                  src={game.logo_url}
-                  alt={game.name}
-                  width={20}
-                  height={20}
-                  className="rounded"
-                />
-              ) : (
-                <Gamepad2 className="h-4 w-4" />
-              )}
-              {game.name}
-            </Button>
-          ))}
         </div>
       </div>
 
@@ -156,39 +116,25 @@ export function ServicesContent({
           >
             All Categories
           </Button>
-          {categories.map((cat) => {
-            const Icon = categoryIcons[cat]
-            return (
-              <Button
-                key={cat}
-                variant={selectedCategory === cat ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleCategoryFilter(cat)}
-                className="gap-2"
-              >
-                <Icon className="h-4 w-4" />
-                {categoryLabels[cat]}
-              </Button>
-            )
-          })}
+          {categories.map((cat) => (
+            <Button
+              key={cat}
+              variant={selectedCategory === cat ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleCategoryFilter(cat)}
+            >
+              {cat}
+            </Button>
+          ))}
         </div>
       </div>
 
       {/* Active Filters */}
-      {(selectedGame || selectedCategory || searchQuery) && (
+      {(selectedCategory || searchQuery) && (
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-muted-foreground">Active filters:</span>
-          {selectedGame && activeGame && (
-            <Badge variant="secondary" className="gap-1">
-              {activeGame.name}
-              <X 
-                className="h-3 w-3 cursor-pointer" 
-                onClick={() => handleGameFilter(null)}
-              />
-            </Badge>
-          )}
           {selectedCategory && (
-            <Badge variant="secondary" className="gap-1 capitalize">
+            <Badge variant="secondary" className="gap-1">
               {selectedCategory}
               <X 
                 className="h-3 w-3 cursor-pointer" 
@@ -201,7 +147,7 @@ export function ServicesContent({
               &quot;{searchQuery}&quot;
               <X 
                 className="h-3 w-3 cursor-pointer" 
-                onClick={() => setSearchQuery("")}
+                onClick={() => handleSearch("")}
               />
             </Badge>
           )}
@@ -214,54 +160,47 @@ export function ServicesContent({
       {/* Services Grid */}
       {filteredServices.length > 0 ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredServices.map((service) => {
-            const CategoryIcon = categoryIcons[service.category]
-            return (
-              <Card key={service.id} className="glass hover:glow-primary transition-all group overflow-hidden">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <Badge variant="secondary" className="text-xs">
-                      <CategoryIcon className="h-3 w-3 mr-1" />
-                      {categoryLabels[service.category]}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      {service.game}
-                    </Badge>
-                  </div>
-                  <CardTitle className="text-lg group-hover:text-primary transition-colors mt-2">
-                    {service.title}
-                  </CardTitle>
-                  <CardDescription className="line-clamp-2">
-                    {service.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pb-3">
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-2xl font-bold text-gradient">
-                      {formatCurrency(service.base_price_cents || 0)}
-                    </span>
-                    {service.price_type === "hourly" && (
-                      <span className="text-sm text-muted-foreground">/hr</span>
-                    )}
-                    {service.price_type === "per_rank" && (
-                      <span className="text-sm text-muted-foreground">/rank</span>
-                    )}
-                  </div>
-                </CardContent>
-                <CardFooter className="pt-0">
-                  <Button className="w-full" asChild>
-                    <Link href={`/services/${service.id}`}>
-                      <ShoppingCart className="mr-2 h-4 w-4" />
-                      View Details
-                    </Link>
-                  </Button>
-                </CardFooter>
-              </Card>
-            )
-          })}
+          {filteredServices.map((service) => (
+            <Card key={service.id} className="hover:shadow-lg transition-all group overflow-hidden flex flex-col">
+              <CardHeader className="pb-3">
+                {service.category && (
+                  <Badge variant="secondary" className="text-xs w-fit mb-2">
+                    {service.category}
+                  </Badge>
+                )}
+                <CardTitle className="text-lg group-hover:text-primary transition-colors">
+                  {service.title}
+                </CardTitle>
+                <CardDescription className="line-clamp-2">
+                  {service.description}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pb-3 flex-1">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-bold">
+                    {formatCurrency(service.price_cents || 0)}
+                  </span>
+                </div>
+              </CardContent>
+              <CardFooter className="pt-0 flex gap-2">
+                <Button 
+                  className="flex-1" 
+                  onClick={() => handleBuyNow(service)}
+                >
+                  <ShoppingCart className="mr-2 h-4 w-4" />
+                  Buy Now
+                </Button>
+                <Button variant="outline" className="flex-1" asChild>
+                  <Link href={`/services/${service.id}`}>
+                    Details
+                  </Link>
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
         </div>
       ) : (
-        <Card className="glass">
+        <Card>
           <CardContent className="p-12 text-center">
             <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">No services found</h3>
@@ -271,7 +210,7 @@ export function ServicesContent({
                 : "Try adjusting your filters to find what you're looking for."
               }
             </p>
-            {(selectedCategory || selectedGame || searchQuery) && (
+            {(selectedCategory || searchQuery) && (
               <Button variant="outline" onClick={clearFilters}>
                 Clear Filters
               </Button>

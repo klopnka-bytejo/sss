@@ -30,17 +30,17 @@ export async function GET() {
         o.service_id,
         o.status,
         o.amount_cents,
-        o.platform_fee_cents,
-        o.pro_payout_cents,
         o.payment_method,
         o.payment_status,
         o.created_at,
         o.updated_at,
-        p.email as client_email,
-        p.display_name as client_name,
+        c.email as client_email,
+        c.display_name as client_name,
+        p.display_name as pro_name,
         s.title as service_title
       FROM orders o
-      LEFT JOIN profiles p ON o.client_id = p.id
+      LEFT JOIN profiles c ON o.client_id = c.id
+      LEFT JOIN profiles p ON o.pro_id = p.id
       LEFT JOIN services s ON o.service_id = s.id
       ORDER BY o.created_at DESC
       LIMIT 100
@@ -48,7 +48,8 @@ export async function GET() {
 
     return NextResponse.json({ orders: orders || [] })
   } catch (error) {
-    console.error('Admin orders error:', error)
+    console.error('[v0] Admin orders error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+

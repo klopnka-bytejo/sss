@@ -2,61 +2,50 @@ import { Suspense } from "react"
 import { sql } from "@/lib/neon/server"
 import { AppLayout } from "@/components/app-layout"
 import { ServicesContent } from "@/components/services/services-content"
-import type { Profile, UserRole, Game } from "@/lib/types"
+import type { Profile } from "@/lib/types"
 
 interface PageProps {
-  searchParams: Promise<{ game?: string; category?: string }>
+  searchParams: Promise<{ category?: string; search?: string }>
+}
+
+export const metadata = {
+  title: 'Browse Services | Elevate',
+  description: 'Discover professional services from top experts',
 }
 
 export default async function ServicesPage({ searchParams }: PageProps) {
   const params = await searchParams
   
-  let userProfile: Profile | null = null
-  let games: any[] = []
   let services: any[] = []
 
   try {
-    // Fetch games for filter
-    games = await sql`
-      SELECT * FROM games
-      WHERE is_active = true
-      ORDER BY sort_order ASC
-    `
-
     // Fetch services with optional filters
-    if (params.game && params.category) {
+    if (params.search && params.category) {
       services = await sql`
-        SELECT s.*, g.name as game_name
-        FROM services s
-        LEFT JOIN games g ON s.game_id = g.id
-        WHERE s.is_active = true 
-          AND g.slug = ${params.game}
-          AND s.category = ${params.category}
-        ORDER BY s.created_at DESC
+        SELECT * FROM services
+        WHERE active = true 
+          AND category = ${params.category}
+          AND (title ILIKE ${'%' + params.search + '%'} OR description ILIKE ${'%' + params.search + '%'})
+        ORDER BY created_at DESC
       `
-    } else if (params.game) {
+    } else if (params.search) {
       services = await sql`
-        SELECT s.*, g.name as game_name
-        FROM services s
-        LEFT JOIN games g ON s.game_id = g.id
-        WHERE s.is_active = true AND g.slug = ${params.game}
-        ORDER BY s.created_at DESC
+        SELECT * FROM services
+        WHERE active = true 
+          AND (title ILIKE ${'%' + params.search + '%'} OR description ILIKE ${'%' + params.search + '%'})
+        ORDER BY created_at DESC
       `
     } else if (params.category) {
       services = await sql`
-        SELECT s.*, g.name as game_name
-        FROM services s
-        LEFT JOIN games g ON s.game_id = g.id
-        WHERE s.is_active = true AND s.category = ${params.category}
-        ORDER BY s.created_at DESC
+        SELECT * FROM services
+        WHERE active = true AND category = ${params.category}
+        ORDER BY created_at DESC
       `
     } else {
       services = await sql`
-        SELECT s.*, g.name as game_name
-        FROM services s
-        LEFT JOIN games g ON s.game_id = g.id
-        WHERE s.is_active = true
-        ORDER BY s.created_at DESC
+        SELECT * FROM services
+        WHERE active = true
+        ORDER BY created_at DESC
       `
     }
   } catch (error) {
@@ -72,10 +61,8 @@ export default async function ServicesPage({ searchParams }: PageProps) {
       <Suspense fallback={<div className="p-6">Loading...</div>}>
         <ServicesContent 
           services={services || []} 
-          games={games || []}
-          user={null}
-          selectedGame={params.game}
           selectedCategory={params.category}
+          search={params.search}
         />
       </Suspense>
     </AppLayout>
