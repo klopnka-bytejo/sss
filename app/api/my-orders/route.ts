@@ -14,14 +14,11 @@ export async function GET(request: NextRequest) {
         o.*,
         s.title as service_title,
         s.description as service_description,
-        s.base_price_cents,
-        g.name as game_name,
-        g.slug as game_slug,
+        s.price_cents,
         p.display_name as pro_name,
         p.email as pro_email
       FROM orders o
       LEFT JOIN services s ON o.service_id = s.id
-      LEFT JOIN games g ON s.game_id = g.id
       LEFT JOIN profiles p ON o.pro_id = p.id
       WHERE o.client_id = ${userId}
       ORDER BY o.created_at DESC
