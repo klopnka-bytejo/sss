@@ -1,449 +1,372 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { AppLayout } from "@/components/app-layout"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { 
-  Trophy, 
-  DollarSign, 
-  Clock, 
-  Shield, 
-  Users, 
-  Zap,
-  CheckCircle,
-  Star,
-  ArrowRight,
-  Gamepad2,
-  Wallet,
-  BadgeCheck
-} from "lucide-react"
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Gamepad2, Loader2, AlertCircle, CheckCircle2, Trophy, Zap, Shield } from 'lucide-react'
 
-const benefits = [
-  {
-    icon: DollarSign,
-    title: "Earn 85% Commission",
-    description: "Keep the majority of your earnings. No hidden fees."
-  },
-  {
-    icon: Clock,
-    title: "Flexible Schedule",
-    description: "Work when you want. Set your own availability."
-  },
-  {
-    icon: Shield,
-    title: "Secure Payments",
-    description: "Get paid reliably within 24-48 hours of completion."
-  },
-  {
-    icon: Users,
-    title: "Growing Community",
-    description: "Join thousands of PROs serving gamers worldwide."
-  },
-  {
-    icon: Zap,
-    title: "Instant Orders",
-    description: "Get matched with clients looking for your skills."
-  },
-  {
-    icon: Trophy,
-    title: "Build Your Brand",
-    description: "Grow your reputation and get more clients."
-  }
+const GAMES = [
+  { id: 'league-of-legends', name: 'League of Legends' },
+  { id: 'valorant', name: 'Valorant' },
+  { id: 'wow', name: 'World of Warcraft' },
+  { id: 'elden-ring', name: 'Elden Ring' },
+  { id: 'cs2', name: 'CS2' },
+  { id: 'dota2', name: 'Dota 2' },
 ]
 
-const requirements = [
-  "High skill level in at least one supported game",
-  "Reliable internet connection",
-  "Ability to complete orders in a timely manner",
-  "Professional and respectful communication",
-  "Must be 18 years or older",
-  "Valid ID for verification"
+const COUNTRIES = [
+  'United States', 'Canada', 'United Kingdom', 'Australia', 'Germany', 'France', 'Spain', 
+  'Japan', 'South Korea', 'Brazil', 'Mexico', 'India', 'Other'
 ]
 
-const games = [
-  "Call of Duty",
-  "World of Warcraft", 
-  "Fortnite",
-  "Destiny 2",
-  "EA FC 26",
-  "Battlefield",
-  "Elden Ring",
-  "Arc Raiders"
-]
+type FormData = {
+  fullName: string
+  email: string
+  discordUsername: string
+  gamerTag: string
+  games: string[]
+  country: string
+  yearsOfExperience: string
+  bio: string
+}
 
 export default function BecomeProPage() {
-  const [step, setStep] = useState(1)
-  const [formData, setFormData] = useState({
-    email: "",
-    displayName: "",
-    discord: "",
-    selectedGames: [] as string[],
-    experience: "",
-    achievements: "",
-    agreeTerms: false,
-    agreeAge: false
+  const router = useRouter()
+  const [formData, setFormData] = useState<FormData>({
+    fullName: '',
+    email: '',
+    discordUsername: '',
+    gamerTag: '',
+    games: [],
+    country: '',
+    yearsOfExperience: '',
+    bio: '',
   })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
 
-  const toggleGame = (game: string) => {
+  const toggleGame = (gameId: string) => {
     setFormData(prev => ({
       ...prev,
-      selectedGames: prev.selectedGames.includes(game)
-        ? prev.selectedGames.filter(g => g !== game)
-        : [...prev.selectedGames, game]
+      games: prev.games.includes(gameId)
+        ? prev.games.filter(g => g !== gameId)
+        : [...prev.games, gameId]
     }))
   }
 
-  const handleSubmit = async () => {
-    setIsSubmitting(true)
+  const handleInputChange = (field: keyof FormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const validateForm = () => {
+    if (!formData.fullName.trim()) return 'Full name is required'
+    if (!formData.email.includes('@')) return 'Valid email is required'
+    if (!formData.discordUsername.trim()) return 'Discord username is required'
+    if (!formData.gamerTag.trim()) return 'Gamer tag is required'
+    if (formData.games.length === 0) return 'Select at least one game'
+    if (!formData.country) return 'Country/Region is required'
+    if (!formData.yearsOfExperience) return 'Experience level is required'
+    if (formData.bio.trim().length < 20) return 'Bio must be at least 20 characters'
+    return null
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    const validationError = validateForm()
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
     try {
-      const response = await fetch("/api/pro/apply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          displayName: formData.displayName,
-          discord: formData.discord || null,
-          games: formData.selectedGames,
-          experience: formData.experience,
-          achievements: formData.achievements,
-          acceptedTerms: formData.agreeTerms,
-          acceptedAge: formData.agreeAge,
-        }),
+      const res = await fetch('/api/pro-applications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       })
-      
-      if (response.ok) {
-        setSubmitted(true)
-      } else {
-        const data = await response.json()
-        alert(data.error || "Failed to submit application")
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Application submission failed')
+        setLoading(false)
+        return
       }
-    } catch (error) {
-      alert("Failed to submit application")
-    } finally {
-      setIsSubmitting(false)
+
+      setSuccess(true)
+      setTimeout(() => {
+        router.push('/')
+      }, 3000)
+    } catch (err) {
+      setError('An error occurred. Please try again.')
+      setLoading(false)
     }
   }
 
-  if (submitted) {
+  if (success) {
     return (
-      <AppLayout>
-        <div className="min-h-screen flex items-center justify-center py-16">
-          <Card className="max-w-lg mx-auto glass text-center">
-            <CardContent className="p-8">
-              <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="h-8 w-8 text-green-500" />
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="pt-10 pb-10 space-y-4">
+            <div className="flex justify-center">
+              <div className="relative">
+                <div className="absolute inset-0 bg-green-500/20 blur-xl rounded-full" />
+                <CheckCircle2 className="h-16 w-16 text-green-500 relative" />
               </div>
-              <h2 className="text-2xl font-bold mb-2">Application Submitted!</h2>
-              <p className="text-muted-foreground mb-6">
-                Thanks for applying to become a PRO! We&apos;ll review your application and get back to you within 24-48 hours.
-              </p>
-              <Button asChild>
-                <a href="/">Return Home</a>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </AppLayout>
+            </div>
+            <h2 className="text-2xl font-bold">Application Submitted!</h2>
+            <p className="text-muted-foreground">
+              Your application has been submitted successfully. We will contact you through Discord to continue your application process.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Redirecting to home page in a few seconds...
+            </p>
+            <Link href="/">
+              <Button className="w-full">Back to Home</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
   return (
-    <AppLayout>
-      <div className="min-h-screen">
-        {/* Hero Section */}
-        <section className="relative py-16 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-background to-background" />
-          <div className="container relative">
-            <div className="max-w-3xl mx-auto text-center">
-              <Badge variant="outline" className="mb-4">
-                <Trophy className="h-3 w-3 mr-1" />
-                Join Our Team
-              </Badge>
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                Become a <span className="text-primary">PRO</span>
-              </h1>
-              <p className="text-xl text-muted-foreground mb-8">
-                Turn your gaming skills into income. Join thousands of PROs earning money doing what they love.
-              </p>
-              
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">85%</div>
-                  <div className="text-xs text-muted-foreground">Commission</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">$5K+</div>
-                  <div className="text-xs text-muted-foreground">Top Earners</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">24h</div>
-                  <div className="text-xs text-muted-foreground">Fast Payouts</div>
-                </div>
-              </div>
+    <div className="min-h-screen bg-background py-12 px-4">
+      <div className="max-w-2xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-2">
+          <Link href="/" className="inline-block">
+            <div className="flex items-center justify-center gap-2 text-primary hover:opacity-80 transition">
+              <Gamepad2 className="h-6 w-6" />
+              <span className="font-bold text-lg">Elevate Gaming</span>
             </div>
-          </div>
-        </section>
+          </Link>
+          <h1 className="text-4xl font-bold mt-4">Become a PRO</h1>
+          <p className="text-xl text-muted-foreground">Join our community of expert gaming service providers</p>
+        </div>
 
-        {/* Benefits Section */}
-        <section className="py-12 border-y border-border/50">
-          <div className="container">
-            <h2 className="text-2xl font-bold text-center mb-8">Why Become a PRO?</h2>
-            <div className="grid md:grid-cols-3 gap-6">
-              {benefits.map((benefit) => (
-                <Card key={benefit.title} className="glass">
-                  <CardContent className="p-6">
-                    <div className="p-3 rounded-lg bg-primary/10 w-fit mb-4">
-                      <benefit.icon className="h-6 w-6 text-primary" />
-                    </div>
-                    <h3 className="font-semibold mb-2">{benefit.title}</h3>
-                    <p className="text-sm text-muted-foreground">{benefit.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* Benefits */}
+        <div className="grid md:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="pt-6 space-y-2">
+              <Trophy className="h-8 w-8 text-primary" />
+              <h3 className="font-semibold">Earn Money</h3>
+              <p className="text-sm text-muted-foreground">Get paid for your gaming expertise</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6 space-y-2">
+              <Zap className="h-8 w-8 text-primary" />
+              <h3 className="font-semibold">Build Reputation</h3>
+              <p className="text-sm text-muted-foreground">Grow your portfolio and get verified</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6 space-y-2">
+              <Shield className="h-8 w-8 text-primary" />
+              <h3 className="font-semibold">Safe Platform</h3>
+              <p className="text-sm text-muted-foreground">Secure payments and dispute resolution</p>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Application Form */}
-        <section className="py-12">
-          <div className="container max-w-2xl">
-            <Card className="glass">
-              <CardHeader>
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge>{step}/3</Badge>
-                  <span className="text-sm text-muted-foreground">
-                    {step === 1 ? "Basic Info" : step === 2 ? "Gaming Profile" : "Review & Submit"}
-                  </span>
+        <Card className="glass">
+          <CardHeader>
+            <CardTitle>PRO Application Form</CardTitle>
+            <CardDescription>Fill out all fields to apply for PRO status</CardDescription>
+          </CardHeader>
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-6">
+              {error && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{error}</span>
                 </div>
-                <CardTitle>PRO Application</CardTitle>
-                <CardDescription>
-                  Fill out the form below to apply. Applications are reviewed within 24-48 hours.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {step === 1 && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email Address</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={formData.email}
-                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="displayName">Display Name</Label>
-                      <Input
-                        id="displayName"
-                        placeholder="Your PRO name"
-                        value={formData.displayName}
-                        onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
-                      />
-                      <p className="text-xs text-muted-foreground">This is how clients will see you</p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="discord">Discord Username</Label>
-                      <Input
-                        id="discord"
-                        placeholder="username#1234"
-                        value={formData.discord}
-                        onChange={(e) => setFormData(prev => ({ ...prev, discord: e.target.value }))}
-                      />
-                    </div>
-                    <Button 
-                      className="w-full" 
-                      onClick={() => setStep(2)}
-                      disabled={!formData.email || !formData.displayName}
-                    >
-                      Continue <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </>
-                )}
+              )}
 
-                {step === 2 && (
-                  <>
-                    <div className="space-y-2">
-                      <Label>Select Your Games</Label>
-                      <p className="text-xs text-muted-foreground mb-3">Choose the games you want to offer services for</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {games.map((game) => (
-                          <Button
-                            key={game}
-                            type="button"
-                            variant={formData.selectedGames.includes(game) ? "default" : "outline"}
-                            className="justify-start h-auto py-3"
-                            onClick={() => toggleGame(game)}
-                          >
-                            <Gamepad2 className="h-4 w-4 mr-2" />
-                            {game}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="experience">Gaming Experience</Label>
-                      <Textarea
-                        id="experience"
-                        placeholder="Tell us about your gaming experience, ranks achieved, years played..."
-                        value={formData.experience}
-                        onChange={(e) => setFormData(prev => ({ ...prev, experience: e.target.value }))}
-                        rows={4}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="achievements">Notable Achievements</Label>
-                      <Textarea
-                        id="achievements"
-                        placeholder="Tournament wins, high ranks, speedruns, etc."
-                        value={formData.achievements}
-                        onChange={(e) => setFormData(prev => ({ ...prev, achievements: e.target.value }))}
-                        rows={3}
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={() => setStep(1)}>
-                        Back
-                      </Button>
-                      <Button 
-                        className="flex-1" 
-                        onClick={() => setStep(3)}
-                        disabled={formData.selectedGames.length === 0 || !formData.experience}
+              {/* Personal Info */}
+              <div className="space-y-4">
+                <h3 className="font-semibold">Personal Information</h3>
+                
+                <div>
+                  <Label htmlFor="fullName">Full Name *</Label>
+                  <Input
+                    id="fullName"
+                    placeholder="Your full name"
+                    value={formData.fullName}
+                    onChange={(e) => handleInputChange('fullName', e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="email">Email Address *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="discord">Discord Username *</Label>
+                  <Input
+                    id="discord"
+                    placeholder="YourDiscordTag#1234"
+                    value={formData.discordUsername}
+                    onChange={(e) => handleInputChange('discordUsername', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">We&apos;ll contact you here during onboarding</p>
+                </div>
+
+                <div>
+                  <Label htmlFor="gamerTag">Game Username / Gamer Tag *</Label>
+                  <Input
+                    id="gamerTag"
+                    placeholder="Your in-game username"
+                    value={formData.gamerTag}
+                    onChange={(e) => handleInputChange('gamerTag', e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="country">Country / Region *</Label>
+                  <Select value={formData.country} onValueChange={(value) => handleInputChange('country', value)}>
+                    <SelectTrigger id="country">
+                      <SelectValue placeholder="Select your country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map(country => (
+                        <SelectItem key={country} value={country}>
+                          {country}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Gaming Info */}
+              <div className="space-y-4">
+                <h3 className="font-semibold">Gaming Information</h3>
+                
+                <div>
+                  <Label>Games You Want to Provide Services For *</Label>
+                  <p className="text-xs text-muted-foreground mb-3">Select at least one game</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {GAMES.map(game => (
+                      <button
+                        key={game.id}
+                        type="button"
+                        onClick={() => toggleGame(game.id)}
+                        className={`p-3 rounded-lg border-2 transition text-left ${
+                          formData.games.includes(game.id)
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border bg-card/50 hover:border-muted-foreground'
+                        }`}
                       >
-                        Continue <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </div>
-                  </>
-                )}
+                        <div className="flex items-center gap-2">
+                          <Checkbox checked={formData.games.includes(game.id)} readOnly />
+                          <span className="text-sm font-medium">{game.name}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-                {step === 3 && (
+                <div>
+                  <Label htmlFor="experience">Experience Level *</Label>
+                  <Select value={formData.yearsOfExperience} onValueChange={(value) => handleInputChange('yearsOfExperience', value)}>
+                    <SelectTrigger id="experience">
+                      <SelectValue placeholder="Select your experience" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="beginner">Beginner (0-1 years)</SelectItem>
+                      <SelectItem value="intermediate">Intermediate (1-3 years)</SelectItem>
+                      <SelectItem value="advanced">Advanced (3-5 years)</SelectItem>
+                      <SelectItem value="expert">Expert (5+ years)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Professional Info */}
+              <div className="space-y-4">
+                <h3 className="font-semibold">Professional Information</h3>
+                
+                <div>
+                  <Label htmlFor="bio">Short Bio / Why do you want to join? *</Label>
+                  <Textarea
+                    id="bio"
+                    placeholder="Tell us about yourself, your skills, and why you want to become a PRO... (minimum 20 characters)"
+                    value={formData.bio}
+                    onChange={(e) => handleInputChange('bio', e.target.value)}
+                    className="min-h-32"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formData.bio.length} characters (minimum 20)
+                  </p>
+                </div>
+              </div>
+
+              {/* Terms */}
+              <div className="p-4 rounded-lg bg-muted/50 space-y-2 text-sm">
+                <p className="font-medium">Before you submit:</p>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                  <li>We&apos;ll review your application within 24-48 hours</li>
+                  <li>We&apos;ll contact you via Discord to verify your skills and discuss details</li>
+                  <li>Upon approval, your PRO profile will be live on our platform</li>
+                  <li>You&apos;ll be able to create services and start earning immediately</li>
+                </ul>
+              </div>
+            </CardContent>
+
+            <CardFooter className="flex gap-3">
+              <Link href="/" className="flex-1">
+                <Button variant="outline" className="w-full">Cancel</Button>
+              </Link>
+              <Button type="submit" disabled={loading} className="flex-1">
+                {loading ? (
                   <>
-                    <div className="space-y-4 p-4 rounded-lg bg-muted/30 border border-border/50">
-                      <h3 className="font-semibold">Application Summary</h3>
-                      <div className="grid gap-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Email:</span>
-                          <span>{formData.email}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Display Name:</span>
-                          <span>{formData.displayName}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Discord:</span>
-                          <span>{formData.discord || "Not provided"}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Games:</span>
-                          <span>{formData.selectedGames.length} selected</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <h3 className="font-semibold">Requirements</h3>
-                      <ul className="space-y-2">
-                        {requirements.map((req, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm">
-                            <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                            <span className="text-muted-foreground">{req}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="space-y-4 pt-4 border-t">
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          id="agreeTerms"
-                          checked={formData.agreeTerms}
-                          onCheckedChange={(checked) => 
-                            setFormData(prev => ({ ...prev, agreeTerms: checked as boolean }))
-                          }
-                        />
-                        <label htmlFor="agreeTerms" className="text-sm text-muted-foreground cursor-pointer">
-                          I agree to the <a href="/terms" className="text-primary underline">Terms of Service</a> and <a href="/pro-guidelines" className="text-primary underline">PRO Guidelines</a>
-                        </label>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          id="agreeAge"
-                          checked={formData.agreeAge}
-                          onCheckedChange={(checked) => 
-                            setFormData(prev => ({ ...prev, agreeAge: checked as boolean }))
-                          }
-                        />
-                        <label htmlFor="agreeAge" className="text-sm text-muted-foreground cursor-pointer">
-                          I confirm that I am 18 years of age or older
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={() => setStep(2)}>
-                        Back
-                      </Button>
-                      <Button 
-                        className="flex-1" 
-                        onClick={handleSubmit}
-                        disabled={!formData.agreeTerms || !formData.agreeAge || isSubmitting}
-                      >
-                        {isSubmitting ? "Submitting..." : "Submit Application"}
-                      </Button>
-                    </div>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Submitting...
                   </>
+                ) : (
+                  'Submit Application'
                 )}
-              </CardContent>
-            </Card>
-          </div>
-        </section>
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
 
-        {/* How It Works */}
-        <section className="py-12 border-t border-border/50">
-          <div className="container max-w-4xl">
-            <h2 className="text-2xl font-bold text-center mb-8">How It Works</h2>
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
-                  <BadgeCheck className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-2">1. Apply & Get Verified</h3>
-                <p className="text-sm text-muted-foreground">
-                  Submit your application and complete our verification process
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
-                  <Star className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-2">2. Accept Orders</h3>
-                <p className="text-sm text-muted-foreground">
-                  Browse available orders and accept the ones that match your skills
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
-                  <Wallet className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-2">3. Get Paid</h3>
-                <p className="text-sm text-muted-foreground">
-                  Complete orders and withdraw your earnings within 24-48 hours
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* Questions */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Have Questions?</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              Check out our <Link href="/faq" className="text-primary hover:underline">FAQ</Link> or{' '}
+              <Link href="/support" className="text-primary hover:underline">contact support</Link> for more information.
+            </p>
+          </CardContent>
+        </Card>
       </div>
-    </AppLayout>
+    </div>
   )
 }

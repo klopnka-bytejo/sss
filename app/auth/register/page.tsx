@@ -110,37 +110,21 @@ export default function RegisterPage() {
         </CardHeader>
         <form onSubmit={handleRegister}>
           <CardContent className="space-y-5">
-            {/* Role Selector - At Top */}
+            {/* Role Selector - Only Client */}
             <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">Select your role</Label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setRole("client")}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
-                    role === "client"
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-card/50 text-muted-foreground hover:border-muted-foreground"
-                  }`}
-                >
-                  <User className={`h-6 w-6 ${role === "client" ? "text-primary" : ""}`} />
-                  <span className="font-medium">Client</span>
-                  <span className="text-xs text-center opacity-70">Purchase gaming services</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole("pro")}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
-                    role === "pro"
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-card/50 text-muted-foreground hover:border-muted-foreground"
-                  }`}
-                >
-                  <Trophy className={`h-6 w-6 ${role === "pro" ? "text-primary" : ""}`} />
-                  <span className="font-medium">PRO</span>
-                  <span className="text-xs text-center opacity-70">Provide services</span>
-                </button>
+              <Label className="text-sm text-muted-foreground">Account Type</Label>
+              <div className="p-4 rounded-lg border-2 border-primary/30 bg-primary/5">
+                <div className="flex items-center gap-3">
+                  <User className="h-6 w-6 text-primary" />
+                  <div>
+                    <p className="font-medium">Client Account</p>
+                    <p className="text-xs text-muted-foreground">Purchase gaming services from our PROs</p>
+                  </div>
+                </div>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Want to become a PRO? <Link href="/become-pro" className="text-primary hover:underline">Apply here</Link>
+              </p>
             </div>
 
             {/* Error Message */}
