@@ -1,95 +1,76 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { sql } from '@/lib/neon/server'
+import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const userId = cookieStore.get('user_id')?.value
-
     const data = await request.json()
-    console.log('[v0] PRO application data:', { ...data, bio: data.bio?.substring(0, 50) })
+    console.log('[v0] PRO application submitted:', { email: data.email, games: data.games?.length })
     
-    const { fullName, email, discordUsername, gamerTag, games, country, customCountry, yearsOfExperience, bio } = data
+    const { fullName, email, password, discordUsername, gamerTag, games, country, customCountry, yearsOfExperience, bio } = data
 
     // Use customCountry if country is "Other"
     const finalCountry = country === 'Other' ? customCountry : country
-    console.log('[v0] Final country:', { country, customCountry, finalCountry })
 
     // Validate required fields
-    if (!fullName || !email || !discordUsername || !gamerTag || !finalCountry || !yearsOfExperience || !bio || games.length === 0) {
+    if (!fullName || !email || !password || !discordUsername || !gamerTag || !finalCountry || !yearsOfExperience || !bio || games.length === 0) {
+      console.log('[v0] Missing fields:', { fullName: !!fullName, email: !!email, password: !!password, discordUsername: !!discordUsername, gamerTag: !!gamerTag, finalCountry: !!finalCountry, yearsOfExperience: !!yearsOfExperience, bio: !!bio, gamesLength: games?.length })
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // If user is logged in, use their profile
-    if (userId) {
-      // Check if already a PRO
-      const existingPro = await sql`
-        SELECT id FROM pro_profiles WHERE user_id = ${userId}
-      `
-
-      if (existingPro && existingPro.length > 0) {
-        return NextResponse.json({ error: 'You are already a PRO' }, { status: 400 })
-      }
-
-      // Create PRO profile for existing user
-      const proProfile = await sql`
-        INSERT INTO pro_profiles (
-          user_id, display_name, bio, games, experience_level, 
-          contact_email, discord_username, gamer_tag, country, status, created_at
-        ) VALUES (
-          ${userId}, ${fullName}, ${bio}, ${JSON.stringify(games)},
-          ${yearsOfExperience}, ${email}, ${discordUsername}, ${gamerTag},
-          ${finalCountry}, 'pending', NOW()
-        )
-        RETURNING *
-      `
-
-      // Log audit
-      await sql`
-        INSERT INTO admin_audit_log (admin_id, action, entity_type, entity_id, details, created_at)
-        VALUES (
-          NULL,
-          'pro_application_submitted',
-          'pro_profile',
-          ${proProfile[0].id},
-          ${JSON.stringify({ games, country, email })},
-          NOW()
-        )
-      `
-
-      return NextResponse.json({
-        message: 'Application submitted successfully. We will review it within 24-48 hours.',
-        application: proProfile[0]
-      }, { status: 201 })
-    } else {
-      // For non-logged-in users, just validate the data and return success
-      // (In production, you'd want to store this for them to complete later)
-      const applicationData = {
-        fullName,
-        email,
-        discordUsername,
-        gamerTag,
-        games,
-        country: finalCountry,
-        yearsOfExperience,
-        bio,
-        createdAt: new Date().toISOString(),
-        status: 'pending'
-      }
-
-      return NextResponse.json({
-        message: 'Application submitted successfully. We will contact you via Discord soon.',
-        application: applicationData
-      }, { status: 201 })
+    if (password.length < 8) {
+      return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
     }
+
+    // Check if email already has an application
+    const existingApp = await sql`
+      SELECT id FROM pro_applications WHERE email = ${email}
+    `
+
+    if (existingApp && existingApp.length > 0) {
+      return NextResponse.json({ error: 'Application already exists for this email' }, { status: 400 })
+    }
+
+    // Check if email exists in profiles
+    const existingUser = await sql`
+      SELECT id FROM profiles WHERE email = ${email}
+    `
+
+    if (existingUser && existingUser.length > 0) {
+      return NextResponse.json({ error: 'An account with this email already exists' }, { status: 400 })
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10)
+
+    // Insert application
+    const application = await sql`
+      INSERT INTO pro_applications (
+        full_name, email, password_hash, discord_username, gamer_tag,
+        games, country, years_of_experience, bio, status, created_at
+      ) VALUES (
+        ${fullName}, ${email}, ${passwordHash}, ${discordUsername}, ${gamerTag},
+        ${JSON.stringify(games)}, ${finalCountry}, ${yearsOfExperience}, ${bio},
+        'pending', NOW()
+      )
+      RETURNING id, full_name, email, status, created_at
+    `
+
+    console.log('[v0] Application created successfully:', application[0].id)
+
+    return NextResponse.json({
+      success: true,
+      message: 'Application submitted successfully!',
+      application: application[0]
+    }, { status: 201 })
   } catch (error) {
     console.error('[v0] Pro application error:', error)
-    return NextResponse.json({ error: 'Failed to submit application' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to submit application. Please try again.' }, { status: 500 })
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies()
     const userId = cookieStore.get('user_id')?.value
@@ -98,16 +79,28 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const application = await sql`
-      SELECT * FROM pro_profiles
-      WHERE user_id = ${userId}
-      ORDER BY created_at DESC
-      LIMIT 1
+    // Verify admin
+    const admin = await sql`
+      SELECT role FROM profiles WHERE id = ${userId}
     `
 
-    return NextResponse.json({ application: application?.[0] || null })
+    if (!admin || admin.length === 0 || admin[0].role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Get all applications
+    const applications = await sql`
+      SELECT 
+        id, full_name, email, discord_username, gamer_tag,
+        games, country, years_of_experience, bio, status,
+        created_at, reviewed_at, reviewed_by
+      FROM pro_applications
+      ORDER BY created_at DESC
+    `
+
+    return NextResponse.json({ applications })
   } catch (error) {
-    console.error('[v0] Get application error:', error)
-    return NextResponse.json({ error: 'Failed to fetch application' }, { status: 500 })
+    console.error('[v0] Get applications error:', error)
+    return NextResponse.json({ error: 'Failed to fetch applications' }, { status: 500 })
   }
 }

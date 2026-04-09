@@ -101,13 +101,18 @@ export default function BecomeProPage() {
     setError(null)
 
     try {
+      console.log('[v0] Submitting application...', { email: formData.email })
+      
       const res = await fetch('/api/pro-applications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       })
 
+      console.log('[v0] Response status:', res.status)
+
       const data = await res.json()
+      console.log('[v0] Response data:', data)
 
       if (!res.ok) {
         setError(data.error || 'Application submission failed')
@@ -120,6 +125,7 @@ export default function BecomeProPage() {
         router.push('/')
       }, 3000)
     } catch (err) {
+      console.error('[v0] Submit error:', err)
       setError('An error occurred. Please try again.')
       setLoading(false)
     }
