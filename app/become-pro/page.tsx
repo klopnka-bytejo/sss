@@ -241,6 +241,20 @@ export default function BecomeProPage() {
                 </div>
 
                 <div>
+                  <Label htmlFor="password">Password *</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Minimum 8 characters"
+                    value={formData.password}
+                    onChange={(e) => handleInputChange('password', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    This will be your login password once your application is approved
+                  </p>
+                </div>
+
+                <div>
                   <Label htmlFor="discord">Discord Username *</Label>
                   <Input
                     id="discord"
