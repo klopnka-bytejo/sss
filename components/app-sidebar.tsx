@@ -37,6 +37,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
+import { Badge } from '@/components/ui/badge'
+import { useUnreadMessages } from '@/lib/hooks/use-unread-messages'
 import type { UserRole } from '@/lib/types'
 
 // Client navigation
@@ -90,6 +92,7 @@ interface AppSidebarProps {
 export function AppSidebar({ userRole = 'client' }: AppSidebarProps) {
   const pathname = usePathname()
   const { setOpenMobile } = useSidebar()
+  const unreadCount = useUnreadMessages()
 
   const handleNavClick = () => {
     setOpenMobile(false)
@@ -137,12 +140,21 @@ export function AppSidebar({ userRole = 'client' }: AppSidebarProps) {
               {navItems.map((item) => {
                 const isActive = pathname === item.href || 
                   (item.href !== '/dashboard' && pathname.startsWith(item.href))
+                const isMessages = item.title === 'Messages'
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild isActive={isActive}>
-                      <Link href={item.href} onClick={handleNavClick}>
+                      <Link href={item.href} onClick={handleNavClick} className="relative">
                         <item.icon className="size-4" />
                         <span>{item.title}</span>
+                        {isMessages && unreadCount > 0 && (
+                          <Badge 
+                            variant="destructive" 
+                            className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                          >
+                            {unreadCount > 9 ? '9+' : unreadCount}
+                          </Badge>
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

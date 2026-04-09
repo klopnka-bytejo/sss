@@ -12,6 +12,8 @@ import { MessageSquare, Search, AlertTriangle, Eye, Clock, Users, Send, Loader2 
 
 interface Conversation {
   id: string
+  participant_1_id: string
+  participant_2_id: string
   participant_1_name: string
   participant_1_email: string
   participant_2_name: string
@@ -19,6 +21,7 @@ interface Conversation {
   last_message: string
   last_message_at: string
   message_count: number
+  unread_count: number
 }
 
 export default function AdminChatMonitoringPage() {
@@ -73,14 +76,13 @@ export default function AdminChatMonitoringPage() {
 
     setSending(true)
     try {
-      // Determine recipient (the participant that is NOT the admin)
-      // For simplicity, send to participant_1 (can be improved with better logic)
+      // Send to participant_1 (usually the client)
       const res = await fetch('/api/messages/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          recipientId: selectedConversation.participant_1_email, // This should be participant ID
+          recipientId: selectedConversation.participant_1_id,
           message: newMessage,
         }),
       })
@@ -88,7 +90,9 @@ export default function AdminChatMonitoringPage() {
       if (res.ok) {
         setNewMessage('')
         fetchMessages(selectedConversation.id)
-        fetchConversations() // Refresh conversation list
+        fetchConversations()
+      } else {
+        console.error('[v0] Failed to send message')
       }
     } catch (error) {
       console.error('[v0] Failed to send message:', error)
@@ -117,16 +121,9 @@ export default function AdminChatMonitoringPage() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Chat Monitoring</h1>
-            <p className="text-muted-foreground">Monitor and moderate user conversations</p>
-          </div>
-          {totalUnread > 0 && (
-            <Badge variant="destructive" className="h-8 px-3 text-base">
-              {totalUnread} New Message{totalUnread !== 1 ? 's' : ''}
-            </Badge>
-          )}
+        <div>
+          <h1 className="text-3xl font-bold">Chat Monitoring</h1>
+          <p className="text-muted-foreground">Monitor and moderate user conversations</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-4">

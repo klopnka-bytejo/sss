@@ -4,7 +4,9 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { useAdminUnreadMessages } from '@/lib/hooks/use-admin-unread-messages'
 import {
   LayoutDashboard,
   Users,
@@ -36,6 +38,7 @@ const navItems = [
 
 export function AdminSidebar() {
   const pathname = usePathname()
+  const unreadCount = useAdminUnreadMessages()
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -54,17 +57,26 @@ export function AdminSidebar() {
           {navItems.map((item) => {
             const Icon = item.icon
             const isActive = pathname === item.href
+            const isMessages = item.label === 'Messages'
             return (
               <Link key={item.href} href={item.href}>
                 <Button
                   variant={isActive ? 'default' : 'ghost'}
                   className={cn(
-                    'w-full justify-start text-left',
+                    'w-full justify-start text-left relative',
                     isActive && 'bg-primary text-primary-foreground'
                   )}
                 >
                   <Icon className="mr-2 h-4 w-4" />
                   {item.label}
+                  {isMessages && unreadCount > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-1 right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                    >
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </Badge>
+                  )}
                 </Button>
               </Link>
             )
