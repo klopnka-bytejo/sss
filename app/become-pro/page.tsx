@@ -58,12 +58,17 @@ export default function BecomeProPage() {
   const [success, setSuccess] = useState(false)
 
   const toggleGame = (gameId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      games: prev.games.includes(gameId)
+    console.log('[v0] Toggling game:', gameId)
+    setFormData(prev => {
+      const newGames = prev.games.includes(gameId)
         ? prev.games.filter(g => g !== gameId)
         : [...prev.games, gameId]
-    }))
+      console.log('[v0] Updated games:', newGames)
+      return {
+        ...prev,
+        games: newGames
+      }
+    })
   }
 
   const handleInputChange = (field: keyof FormData, value: string) => {
@@ -290,23 +295,34 @@ export default function BecomeProPage() {
                   <Label>Games You Want to Provide Services For *</Label>
                   <p className="text-xs text-muted-foreground mb-3">Select at least one game</p>
                   <div className="grid grid-cols-2 gap-3">
-                    {GAMES.map(game => (
-                      <button
-                        key={game.id}
-                        type="button"
-                        onClick={() => toggleGame(game.id)}
-                        className={`p-3 rounded-lg border-2 transition text-left ${
-                          formData.games.includes(game.id)
-                            ? 'border-primary bg-primary/10'
-                            : 'border-border bg-card/50 hover:border-muted-foreground'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Checkbox checked={formData.games.includes(game.id)} readOnly />
-                          <span className="text-sm font-medium">{game.name}</span>
-                        </div>
-                      </button>
-                    ))}
+                    {GAMES.map(game => {
+                      const isSelected = formData.games.includes(game.id)
+                      return (
+                        <button
+                          key={game.id}
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            toggleGame(game.id)
+                          }}
+                          className={`p-3 rounded-lg border-2 transition text-left ${
+                            isSelected
+                              ? 'border-primary bg-primary/10'
+                              : 'border-border bg-card/50 hover:border-muted-foreground'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Checkbox 
+                              checked={isSelected}
+                              onCheckedChange={() => {}} 
+                              aria-hidden="true"
+                              tabIndex={-1}
+                            />
+                            <span className="text-sm font-medium">{game.name}</span>
+                          </div>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
 
