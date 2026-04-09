@@ -23,21 +23,19 @@ export async function GET(request: NextRequest) {
     // Get conversations with message counts
     const conversations = await sql`
       SELECT 
-        o.id,
-        o.order_number,
-        o.status,
-        c.display_name as client_name,
-        p.display_name as pro_name,
-        (SELECT message FROM order_messages WHERE order_id = o.id ORDER BY created_at DESC LIMIT 1) as last_message,
-        (SELECT created_at FROM order_messages WHERE order_id = o.id ORDER BY created_at DESC LIMIT 1) as last_message_time,
-        (SELECT COUNT(*) FROM order_messages WHERE order_id = o.id) as message_count,
-        false as has_flagged
-      FROM orders o
-      LEFT JOIN profiles c ON o.client_id = c.id
-      LEFT JOIN profiles p ON o.pro_id = p.id
-      WHERE EXISTS (SELECT 1 FROM order_messages WHERE order_id = o.id)
-      ORDER BY last_message_time DESC
-      LIMIT 50
+        c.id,
+        c.last_message_at,
+        p1.display_name as participant_1_name,
+        p1.email as participant_1_email,
+        p2.display_name as participant_2_name,
+        p2.email as participant_2_email,
+        (SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message,
+        (SELECT COUNT(*)::int FROM messages WHERE conversation_id = c.id) as message_count
+      FROM conversations c
+      LEFT JOIN profiles p1 ON c.participant_1_id = p1.id
+      LEFT JOIN profiles p2 ON c.participant_2_id = p2.id
+      ORDER BY c.last_message_at DESC
+      LIMIT 100
     `
 
     return NextResponse.json({ conversations: conversations || [] })
