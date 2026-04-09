@@ -78,6 +78,7 @@ export default function BecomeProPage() {
   const validateForm = () => {
     if (!formData.fullName.trim()) return 'Full name is required'
     if (!formData.email.includes('@')) return 'Valid email is required'
+    if (!formData.password || formData.password.length < 8) return 'Password must be at least 8 characters'
     if (!formData.discordUsername.trim()) return 'Discord username is required'
     if (!formData.gamerTag.trim()) return 'Gamer tag is required'
     if (formData.games.length === 0) return 'Select at least one game'
