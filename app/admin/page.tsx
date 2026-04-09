@@ -3,7 +3,6 @@ import { cookies } from "next/headers"
 import { sql } from "@/lib/neon/server"
 import { AdminLayout } from "@/components/admin/admin-layout"
 import { AdminDashboard } from "@/components/admin/admin-dashboard"
-import type { Profile } from "@/lib/types"
 
 export default async function AdminPage() {
   const cookieStore = await cookies()
