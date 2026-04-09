@@ -2,7 +2,7 @@ import React from "react"
 import type { Metadata } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
-import { CartProvider } from '@/lib/cart-context'
+import { CartProvider } from '@/lib/contexts/cart-context'
 import './globals.css'
 
 const _inter = Inter({ subsets: ["latin"], variable: '--font-inter' });

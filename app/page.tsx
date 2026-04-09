@@ -32,18 +32,10 @@ export default async function LandingPage() {
   let services: any[] = []
 
   try {
-    // Fetch games from Neon database
-    games = await sql`
-      SELECT * FROM games 
-      WHERE is_active = true 
-      ORDER BY sort_order ASC 
-      LIMIT 8
-    `
-    
     // Fetch popular services
     services = await sql`
       SELECT * FROM services 
-      WHERE is_active = true 
+      WHERE active = true 
       ORDER BY created_at DESC 
       LIMIT 6
     `
@@ -145,45 +137,47 @@ export default async function LandingPage() {
       </section>
 
       {/* Games Section */}
-      <section className="py-12 border-y border-border/30 bg-card/30">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold">Browse by Game</h2>
-            <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground" asChild>
-              <Link href="/games">
-                View all
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
+      {games && games.length > 0 && (
+        <section className="py-12 border-y border-border/30 bg-card/30">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold">Browse by Game</h2>
+              <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground" asChild>
+                <Link href="/games">
+                  View all
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+              {games?.map((game) => (
+                <Link
+                  key={game.id}
+                  href={`/games/${game.slug}`}
+                  className="group flex flex-col items-center gap-2 p-3 rounded-xl bg-card/50 border border-border/30 hover:border-primary/50 hover:bg-card transition-all duration-200"
+                >
+                  <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-secondary">
+                    {game.logo_url ? (
+                      <Image
+                        src={game.logo_url}
+                        alt={game.name}
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Gamepad2 className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-xs font-medium text-center line-clamp-1">{game.name}</span>
+                </Link>
+              ))}
+            </div>
           </div>
-          
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-            {games?.map((game) => (
-              <Link
-                key={game.id}
-                href={`/games/${game.slug}`}
-                className="group flex flex-col items-center gap-2 p-3 rounded-xl bg-card/50 border border-border/30 hover:border-primary/50 hover:bg-card transition-all duration-200"
-              >
-                <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-secondary">
-                  {game.logo_url ? (
-                    <Image
-                      src={game.logo_url}
-                      alt={game.name}
-                      fill
-                      className="object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Gamepad2 className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-                <span className="text-xs font-medium text-center line-clamp-1">{game.name}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Popular Services */}
       <section className="py-16">
