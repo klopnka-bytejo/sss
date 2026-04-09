@@ -139,11 +139,20 @@ export default function ClientMessagesPage() {
     )
   }
 
+  const totalUnread = conversations.reduce((sum, conv) => sum + conv.unread_count, 0)
+
   return (
     <div className="container mx-auto p-6 max-w-7xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Messages</h1>
-        <p className="text-muted-foreground">Communicate with PROs and support</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Messages</h1>
+          <p className="text-muted-foreground">Communicate with PROs and support</p>
+        </div>
+        {totalUnread > 0 && (
+          <Badge variant="destructive" className="h-8 px-3 text-base">
+            {totalUnread} Unread Message{totalUnread !== 1 ? 's' : ''}
+          </Badge>
+        )}
       </div>
 
       <div className="grid md:grid-cols-3 gap-6 h-[calc(100vh-200px)]">

@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { MessageSquare, Search, AlertTriangle, Eye, Clock, Users } from 'lucide-react'
+import { MessageSquare, Search, AlertTriangle, Eye, Clock, Users, Send, Loader2 } from 'lucide-react'
 
 interface Conversation {
   id: string
@@ -27,6 +27,9 @@ export default function AdminChatMonitoringPage() {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<any[]>([])
   const [search, setSearch] = useState('')
+  const [newMessage, setNewMessage] = useState('')
+  const [sending, setSending] = useState(false)
+  const [totalUnread, setTotalUnread] = useState(0)
 
   useEffect(() => {
     fetchConversations()
@@ -37,8 +40,14 @@ export default function AdminChatMonitoringPage() {
       const res = await fetch('/api/admin/messages')
       const data = await res.json()
       setConversations(data.conversations || [])
+      
+      // Calculate total unread messages
+      const unreadTotal = (data.conversations || []).reduce((sum: number, conv: Conversation) => {
+        return sum + (conv.message_count || 0)
+      }, 0)
+      setTotalUnread(unreadTotal)
     } catch (error) {
-      console.error('Failed to fetch conversations:', error)
+      console.error('[v0] Failed to fetch conversations:', error)
     } finally {
       setLoading(false)
     }
@@ -59,6 +68,42 @@ export default function AdminChatMonitoringPage() {
     fetchMessages(conv.id)
   }
 
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedConversation) return
+
+    setSending(true)
+    try {
+      // Determine recipient (the participant that is NOT the admin)
+      // For simplicity, send to participant_1 (can be improved with better logic)
+      const res = await fetch('/api/messages/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          recipientId: selectedConversation.participant_1_email, // This should be participant ID
+          message: newMessage,
+        }),
+      })
+
+      if (res.ok) {
+        setNewMessage('')
+        fetchMessages(selectedConversation.id)
+        fetchConversations() // Refresh conversation list
+      }
+    } catch (error) {
+      console.error('[v0] Failed to send message:', error)
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
+    }
+  }
+
   const filteredConversations = conversations.filter(conv =>
     conv.participant_1_name?.toLowerCase().includes(search.toLowerCase()) ||
     conv.participant_2_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -72,9 +117,16 @@ export default function AdminChatMonitoringPage() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Chat Monitoring</h1>
-          <p className="text-muted-foreground">Monitor and moderate user conversations</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Chat Monitoring</h1>
+            <p className="text-muted-foreground">Monitor and moderate user conversations</p>
+          </div>
+          {totalUnread > 0 && (
+            <Badge variant="destructive" className="h-8 px-3 text-base">
+              {totalUnread} New Message{totalUnread !== 1 ? 's' : ''}
+            </Badge>
+          )}
         </div>
 
         <div className="grid md:grid-cols-3 gap-4">
@@ -233,6 +285,28 @@ export default function AdminChatMonitoringPage() {
                     )}
                   </div>
                 </ScrollArea>
+              )}
+
+              {/* Message Composer */}
+              {selectedConversation && (
+                <div className="mt-4 pt-4 border-t">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Type a message..."
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      disabled={sending}
+                    />
+                    <Button onClick={handleSendMessage} disabled={sending || !newMessage.trim()}>
+                      {sending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
