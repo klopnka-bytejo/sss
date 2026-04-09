@@ -45,7 +45,7 @@ const clientNavItems = [
   { title: 'Browse Games', href: '/games', icon: Gamepad2 },
   { title: 'Browse Services', href: '/services', icon: ShoppingBag },
   { title: 'My Orders', href: '/orders', icon: Package },
-  { title: 'Messages', href: '/messages', icon: MessageSquare },
+  { title: 'Messages', href: '/dashboard/client/messages', icon: MessageSquare },
   { title: 'Wallet', href: '/wallet', icon: Wallet },
 ]
 

@@ -12,14 +12,13 @@ import { MessageSquare, Search, AlertTriangle, Eye, Clock, Users } from 'lucide-
 
 interface Conversation {
   id: string
-  order_number: string
-  client_name: string
-  pro_name: string
+  participant_1_name: string
+  participant_1_email: string
+  participant_2_name: string
+  participant_2_email: string
   last_message: string
-  last_message_time: string
+  last_message_at: string
   message_count: number
-  has_flagged: boolean
-  status: string
 }
 
 export default function AdminChatMonitoringPage() {
@@ -61,13 +60,14 @@ export default function AdminChatMonitoringPage() {
   }
 
   const filteredConversations = conversations.filter(conv =>
-    conv.order_number?.toLowerCase().includes(search.toLowerCase()) ||
-    conv.client_name?.toLowerCase().includes(search.toLowerCase()) ||
-    conv.pro_name?.toLowerCase().includes(search.toLowerCase())
+    conv.participant_1_name?.toLowerCase().includes(search.toLowerCase()) ||
+    conv.participant_2_name?.toLowerCase().includes(search.toLowerCase()) ||
+    conv.participant_1_email?.toLowerCase().includes(search.toLowerCase()) ||
+    conv.participant_2_email?.toLowerCase().includes(search.toLowerCase())
   )
 
-  const flaggedCount = conversations.filter(c => c.has_flagged).length
-  const activeCount = conversations.filter(c => c.status === 'in_progress').length
+  const flaggedCount = 0 // No flagging system yet
+  const activeCount = conversations.length
 
   return (
     <AdminLayout>
@@ -150,17 +150,14 @@ export default function AdminChatMonitoringPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <p className="font-medium text-sm truncate">
-                                {conv.client_name} & {conv.pro_name}
+                                {conv.participant_1_name} & {conv.participant_2_name}
                               </p>
-                              {conv.has_flagged && (
-                                <AlertTriangle className="h-3 w-3 text-destructive shrink-0" />
-                              )}
                             </div>
                             <p className="text-xs text-muted-foreground truncate">
-                              Order: {conv.order_number}
+                              {conv.participant_1_email} • {conv.participant_2_email}
                             </p>
                             <p className="text-xs text-muted-foreground truncate mt-1">
-                              {conv.last_message}
+                              {conv.last_message || 'No messages yet'}
                             </p>
                           </div>
                           <div className="text-right shrink-0">
@@ -168,7 +165,7 @@ export default function AdminChatMonitoringPage() {
                               {conv.message_count}
                             </Badge>
                             <p className="text-xs text-muted-foreground mt-1">
-                              {new Date(conv.last_message_time).toLocaleDateString()}
+                              {new Date(conv.last_message_at).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
@@ -186,9 +183,9 @@ export default function AdminChatMonitoringPage() {
               <CardTitle>
                 {selectedConversation ? (
                   <div className="flex items-center justify-between">
-                    <span>Order: {selectedConversation.order_number}</span>
-                    <Badge variant={selectedConversation.has_flagged ? 'destructive' : 'secondary'}>
-                      {selectedConversation.has_flagged ? 'Flagged' : selectedConversation.status}
+                    <span>Conversation</span>
+                    <Badge variant="secondary">
+                      {selectedConversation.message_count} messages
                     </Badge>
                   </div>
                 ) : (
@@ -197,7 +194,7 @@ export default function AdminChatMonitoringPage() {
               </CardTitle>
               {selectedConversation && (
                 <CardDescription>
-                  {selectedConversation.client_name} (Client) and {selectedConversation.pro_name} (PRO)
+                  {selectedConversation.participant_1_name} and {selectedConversation.participant_2_name}
                 </CardDescription>
               )}
             </CardHeader>
@@ -214,37 +211,23 @@ export default function AdminChatMonitoringPage() {
                       <p className="text-center text-muted-foreground py-8">No messages</p>
                     ) : (
                       messages.map((msg, idx) => (
-                        <div
-                          key={idx}
-                          className={`flex gap-3 ${msg.is_system ? 'justify-center' : ''}`}
-                        >
-                          {msg.is_system ? (
-                            <div className="bg-muted px-4 py-2 rounded-lg text-sm text-muted-foreground">
-                              {msg.message}
+                        <div key={idx} className="flex gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="text-xs">
+                              {msg.sender_name?.charAt(0) || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium text-sm">{msg.sender_name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(msg.created_at).toLocaleString()}
+                              </span>
                             </div>
-                          ) : (
-                            <>
-                              <Avatar className="h-8 w-8">
-                                <AvatarFallback className="text-xs">
-                                  {msg.sender_name?.charAt(0) || '?'}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-medium text-sm">{msg.sender_name}</span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {new Date(msg.created_at).toLocaleString()}
-                                  </span>
-                                  {msg.sender_role === 'pro' && (
-                                    <Badge variant="secondary" className="text-xs">PRO</Badge>
-                                  )}
-                                </div>
-                                <p className="text-sm bg-accent/50 p-3 rounded-lg">
-                                  {msg.message}
-                                </p>
-                              </div>
-                            </>
-                          )}
+                            <p className="text-sm bg-accent/50 p-3 rounded-lg">
+                              {msg.content}
+                            </p>
+                          </div>
                         </div>
                       ))
                     )}
