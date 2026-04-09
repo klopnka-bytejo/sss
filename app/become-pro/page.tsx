@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Gamepad2, Loader2, AlertCircle, CheckCircle2, Trophy, Zap, Shield } from 'lucide-react'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 const GAMES = [
   { id: 'league-of-legends', name: 'League of Legends' },
@@ -34,6 +35,7 @@ type FormData = {
   gamerTag: string
   games: string[]
   country: string
+  customCountry: string
   yearsOfExperience: string
   bio: string
 }
@@ -47,6 +49,7 @@ export default function BecomeProPage() {
     gamerTag: '',
     games: [],
     country: '',
+    customCountry: '',
     yearsOfExperience: '',
     bio: '',
   })
@@ -74,6 +77,7 @@ export default function BecomeProPage() {
     if (!formData.gamerTag.trim()) return 'Gamer tag is required'
     if (formData.games.length === 0) return 'Select at least one game'
     if (!formData.country) return 'Country/Region is required'
+    if (formData.country === 'Other' && !formData.customCountry.trim()) return 'Please specify your country'
     if (!formData.yearsOfExperience) return 'Experience level is required'
     if (formData.bio.trim().length < 20) return 'Bio must be at least 20 characters'
     return null
@@ -145,6 +149,7 @@ export default function BecomeProPage() {
 
   return (
     <div className="min-h-screen bg-background py-12 px-4">
+      <ThemeToggle />
       <div className="max-w-2xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-2">
@@ -246,7 +251,15 @@ export default function BecomeProPage() {
 
                 <div>
                   <Label htmlFor="country">Country / Region *</Label>
-                  <Select value={formData.country} onValueChange={(value) => handleInputChange('country', value)}>
+                  <Select 
+                    value={formData.country} 
+                    onValueChange={(value) => {
+                      handleInputChange('country', value)
+                      if (value !== 'Other') {
+                        handleInputChange('customCountry', '')
+                      }
+                    }}
+                  >
                     <SelectTrigger id="country">
                       <SelectValue placeholder="Select your country" />
                     </SelectTrigger>
@@ -258,6 +271,14 @@ export default function BecomeProPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {formData.country === 'Other' && (
+                    <Input
+                      placeholder="Please specify your country"
+                      value={formData.customCountry}
+                      onChange={(e) => handleInputChange('customCountry', e.target.value)}
+                      className="mt-2"
+                    />
+                  )}
                 </div>
               </div>
 

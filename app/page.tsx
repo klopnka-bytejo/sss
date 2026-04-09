@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { sql } from "@/lib/neon/server"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { 
   Gamepad2, 
   Shield, 
@@ -45,6 +46,7 @@ export default async function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <ThemeToggle />
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/30">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
