@@ -8,10 +8,16 @@ export async function POST(request: NextRequest) {
     const userId = cookieStore.get('user_id')?.value
 
     const data = await request.json()
-    const { fullName, email, discordUsername, gamerTag, games, country, yearsOfExperience, bio } = data
+    console.log('[v0] PRO application data:', { ...data, bio: data.bio?.substring(0, 50) })
+    
+    const { fullName, email, discordUsername, gamerTag, games, country, customCountry, yearsOfExperience, bio } = data
+
+    // Use customCountry if country is "Other"
+    const finalCountry = country === 'Other' ? customCountry : country
+    console.log('[v0] Final country:', { country, customCountry, finalCountry })
 
     // Validate required fields
-    if (!fullName || !email || !discordUsername || !gamerTag || !country || !yearsOfExperience || !bio || games.length === 0) {
+    if (!fullName || !email || !discordUsername || !gamerTag || !finalCountry || !yearsOfExperience || !bio || games.length === 0) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
@@ -34,7 +40,7 @@ export async function POST(request: NextRequest) {
         ) VALUES (
           ${userId}, ${fullName}, ${bio}, ${JSON.stringify(games)},
           ${yearsOfExperience}, ${email}, ${discordUsername}, ${gamerTag},
-          ${country}, 'pending', NOW()
+          ${finalCountry}, 'pending', NOW()
         )
         RETURNING *
       `
@@ -65,7 +71,7 @@ export async function POST(request: NextRequest) {
         discordUsername,
         gamerTag,
         games,
-        country,
+        country: finalCountry,
         yearsOfExperience,
         bio,
         createdAt: new Date().toISOString(),
