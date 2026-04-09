@@ -28,12 +28,10 @@ function formatCurrency(cents: number) {
 }
 
 export default async function LandingPage() {
-  console.log('[v0] LandingPage starting...')
   let games: any[] = []
   let services: any[] = []
 
   try {
-    console.log('[v0] Fetching from database...')
     // Fetch games from Neon database
     games = await sql`
       SELECT * FROM games 
@@ -49,13 +47,9 @@ export default async function LandingPage() {
       ORDER BY created_at DESC 
       LIMIT 6
     `
-    console.log('[v0] Games fetched:', games?.length)
-    console.log('[v0] Services fetched:', services?.length)
   } catch (error) {
-    console.error('[v0] Database error:', error)
+    console.error('Database error:', error)
   }
-  
-  console.log('[v0] Rendering LandingPage...')
 
   return (
     <div className="min-h-screen bg-background">

@@ -24,19 +24,19 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
 
-    let query = 'SELECT * FROM pro_profiles'
-    const params: any[] = []
-
+    let applications
     if (status && status !== 'all') {
-      query += ' WHERE status = $1'
-      params.push(status)
+      applications = await sql`
+        SELECT * FROM pro_profiles 
+        WHERE status = ${status}
+        ORDER BY created_at DESC
+      `
+    } else {
+      applications = await sql`
+        SELECT * FROM pro_profiles 
+        ORDER BY created_at DESC
+      `
     }
-
-    query += ' ORDER BY created_at DESC'
-
-    const applications = params.length > 0
-      ? await sql(query, params)
-      : await sql(query)
 
     return NextResponse.json({ applications: applications || [] })
   } catch (error) {

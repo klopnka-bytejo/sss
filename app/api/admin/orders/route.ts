@@ -29,13 +29,15 @@ export async function GET() {
         o.pro_id,
         o.service_id,
         o.status,
-        o.total_cents,
+        o.amount_cents,
+        o.platform_fee_cents,
+        o.pro_payout_cents,
         o.payment_method,
         o.payment_status,
         o.created_at,
         o.updated_at,
         p.email as client_email,
-        p.username as client_name,
+        p.display_name as client_name,
         s.title as service_title
       FROM orders o
       LEFT JOIN profiles p ON o.client_id = p.id

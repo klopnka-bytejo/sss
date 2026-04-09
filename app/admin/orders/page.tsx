@@ -142,7 +142,7 @@ export default function AdminOrdersPage() {
                           </div>
                         </TableCell>
                         <TableCell>{order.service_title || 'N/A'}</TableCell>
-                        <TableCell className="font-medium">{formatCurrency(order.total_cents)}</TableCell>
+                        <TableCell className="font-medium">{formatCurrency(order.amount_cents || 0)}</TableCell>
                         <TableCell>
                           <Badge className={statusColors[order.status] || 'bg-gray-500/20 text-gray-500'}>
                             {order.status}

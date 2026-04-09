@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
-import { createClient } from '@supabase/supabase-js'
+import { sql } from '@/lib/neon/server'
 import Stripe from 'stripe'
-
-// Use service role for webhook processing
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 export async function POST(req: NextRequest) {
   const body = await req.text()
@@ -29,7 +23,7 @@ export async function POST(req: NextRequest) {
       event = JSON.parse(body) as Stripe.Event
     }
   } catch (err) {
-    console.error('Webhook signature verification failed:', err)
+    console.error('[v0] Webhook signature verification failed:', err)
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
@@ -41,67 +35,43 @@ export async function POST(req: NextRequest) {
         if (session.payment_status === 'paid') {
           const metadata = session.metadata
           
-          if (metadata?.type === 'deposit') {
-            // Handle wallet deposit
-            const userId = metadata.user_id
-            const amountCents = parseInt(metadata.amount_cents || '0')
-            
-            // Get or create wallet
-            const { data: wallet } = await supabase
-              .from('wallets')
-              .select('id, balance')
-              .eq('user_id', userId)
-              .single()
-            
-            if (wallet) {
-              // Update wallet balance
-              await supabase
-                .from('wallets')
-                .update({ balance: wallet.balance + amountCents })
-                .eq('id', wallet.id)
-              
-              // Create transaction record
-              await supabase.from('wallet_transactions').insert({
-                user_id: userId,
-                wallet_id: wallet.id,
-                type: 'deposit',
-                amount: amountCents,
-                balance_after: wallet.balance + amountCents,
-                description: 'Wallet deposit via Stripe',
-                status: 'completed',
-              })
-            }
-          } else if (metadata?.order_id) {
+          if (metadata?.order_id) {
             // Handle order payment
             const orderId = metadata.order_id
             
             // Update order status to paid
-            await supabase
-              .from('orders')
-              .update({
-                status: 'paid',
-                payment_status: 'paid',
-                paid_at: new Date().toISOString(),
-              })
-              .eq('id', orderId)
+            await sql`
+              UPDATE orders 
+              SET status = 'paid', payment_status = 'paid', updated_at = NOW()
+              WHERE id = ${orderId}
+            `
             
             // Create system message
-            await supabase.from('order_messages').insert({
-              order_id: orderId,
-              content: 'Payment confirmed! Your order is now waiting for a PRO to accept it.',
-              is_system: true,
-            })
+            await sql`
+              INSERT INTO order_messages (order_id, message, is_system, created_at)
+              VALUES (
+                ${orderId}, 
+                'Payment confirmed! Your order is now waiting for a PRO to accept it.',
+                true,
+                NOW()
+              )
+            `
             
             // Log to audit
-            await supabase.from('audit_logs').insert({
-              action: 'payment_completed',
-              entity_type: 'order',
-              entity_id: orderId,
-              details: {
-                payment_intent: session.payment_intent,
-                amount: session.amount_total,
-              },
-            })
+            await sql`
+              INSERT INTO admin_audit_log (admin_id, action, entity_type, entity_id, details, created_at)
+              VALUES (
+                NULL,
+                'payment_completed',
+                'order',
+                ${orderId},
+                ${JSON.stringify({ 
+                  payment_intent: session.payment_intent,
+                  amount: session.amount_total 
+                })},
+                NOW()
+              )
+            `
           }
         }
         break
@@ -113,31 +83,28 @@ export async function POST(req: NextRequest) {
         
         if (orderId) {
           // Mark order as payment failed
-          await supabase
-            .from('orders')
-            .update({
-              status: 'cancelled',
-              payment_status: 'failed',
-            })
-            .eq('id', orderId)
-            .eq('status', 'pending')
+          await sql`
+            UPDATE orders 
+            SET status = 'cancelled', payment_status = 'failed', updated_at = NOW()
+            WHERE id = ${orderId} AND status = 'pending'
+          `
         }
         break
       }
 
       case 'payment_intent.payment_failed': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent
-        console.log('Payment failed:', paymentIntent.id)
+        console.log('[v0] Payment failed:', paymentIntent.id)
         break
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`)
+        console.log(`[v0] Unhandled event type: ${event.type}`)
     }
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error('Webhook processing error:', error)
+    console.error('[v0] Webhook processing error:', error)
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
   }
 }

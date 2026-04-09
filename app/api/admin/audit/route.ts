@@ -22,8 +22,14 @@ export async function GET() {
 
     const logs = await sql`
       SELECT 
-        al.*,
-        p.username,
+        al.id,
+        al.admin_id,
+        al.action,
+        al.entity_type,
+        al.entity_id,
+        al.details,
+        al.created_at,
+        p.display_name as admin_name,
         p.email
       FROM admin_audit_log al
       LEFT JOIN profiles p ON al.admin_id = p.id

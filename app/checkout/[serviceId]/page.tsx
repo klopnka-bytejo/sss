@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
+import { sql } from '@/lib/neon/server'
 import { AppLayout } from '@/components/app-layout'
 import { CheckoutContent } from '@/components/checkout/checkout-content'
 
@@ -9,54 +10,41 @@ export default async function CheckoutPage({
   params: Promise<{ serviceId: string }>
 }) {
   const { serviceId } = await params
-  const supabase = await createClient()
+  const cookieStore = await cookies()
+  const userId = cookieStore.get('user_id')?.value
   
   // Check if user is logged in
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
+  if (!userId) {
     redirect('/auth/login?redirect=/checkout/' + serviceId)
   }
 
-  // Get user profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
+  try {
+    // Get user profile
+    const profiles = await sql`
+      SELECT * FROM profiles WHERE id = ${userId}
+    `
+    const profile = profiles?.[0]
 
-  // Get service details
-  const { data: service, error } = await supabase
-    .from('services')
-    .select('*')
-    .eq('id', serviceId)
-    .single()
+    // Get service details
+    const services = await sql`
+      SELECT * FROM services WHERE id = ${serviceId}
+    `
+    const service = services?.[0]
 
-  if (error || !service) {
+    if (!service) {
+      redirect('/services')
+    }
+
+    return (
+      <AppLayout>
+        <CheckoutContent 
+          service={service}
+          user={profile}
+        />
+      </AppLayout>
+    )
+  } catch (error) {
+    console.error('[v0] Checkout error:', error)
     redirect('/services')
   }
-
-  // Get service add-ons
-  const { data: addons } = await supabase
-    .from('service_addons')
-    .select('*')
-    .eq('service_id', serviceId)
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
-
-  // Get active discounts
-  const { data: discounts } = await supabase
-    .from('discounts')
-    .select('*')
-    .eq('is_active', true)
-
-  return (
-    <AppLayout>
-      <CheckoutContent 
-        service={service}
-        addons={addons || []}
-        discounts={discounts || []}
-        user={profile}
-      />
-    </AppLayout>
-  )
 }

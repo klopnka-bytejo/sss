@@ -25,26 +25,29 @@ export async function GET(request: NextRequest) {
     const role = searchParams.get('role')
     const search = searchParams.get('search')
 
-    // Build query with filters
-    let query = 'SELECT * FROM profiles WHERE 1=1'
-    const params: any[] = []
-
-    if (role && role !== 'all') {
-      query += ' AND role = $' + (params.length + 1)
-      params.push(role)
-    }
-
+    let users
     if (search) {
-      query += ' AND (email ILIKE $' + (params.length + 1) + ' OR username ILIKE $' + (params.length + 2) + ')'
-      params.push(`%${search}%`)
-      params.push(`%${search}%`)
+      users = await sql`
+        SELECT * FROM profiles 
+        WHERE (email ILIKE ${`%${search}%`} OR display_name ILIKE ${`%${search}%`})
+        ${role && role !== 'all' ? sql`AND role = ${role}` : sql``}
+        ORDER BY created_at DESC 
+        LIMIT 100
+      `
+    } else if (role && role !== 'all') {
+      users = await sql`
+        SELECT * FROM profiles 
+        WHERE role = ${role}
+        ORDER BY created_at DESC 
+        LIMIT 100
+      `
+    } else {
+      users = await sql`
+        SELECT * FROM profiles 
+        ORDER BY created_at DESC 
+        LIMIT 100
+      `
     }
-
-    query += ' ORDER BY created_at DESC LIMIT 100'
-
-    const users = params.length > 0 
-      ? await sql(query, params)
-      : await sql(query)
 
     return NextResponse.json({ users: users || [] })
   } catch (error) {
@@ -80,25 +83,19 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Validate action and prepare update
-    let updateQuery = 'UPDATE profiles SET'
-    const params: any[] = []
+    if (action === 'change_role') {
+      if (!newRole || !['client', 'pro', 'admin'].includes(newRole)) {
+        return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
+      }
 
-    switch (action) {
-      case 'change_role':
-        if (!newRole || !['client', 'pro', 'admin'].includes(newRole)) {
-          return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
-        }
-        updateQuery += ' role = $1'
-        params.push(newRole)
-        break
-      default:
-        return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+      await sql`
+        UPDATE profiles 
+        SET role = ${newRole}, updated_at = NOW()
+        WHERE id = ${targetUserId}
+      `
+    } else {
+      return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
-
-    updateQuery += ' WHERE id = $' + (params.length + 1)
-    params.push(targetUserId)
-
-    await sql(updateQuery, params)
 
     return NextResponse.json({ success: true })
   } catch (error) {

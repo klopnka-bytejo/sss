@@ -33,9 +33,9 @@ export async function GET() {
         d.created_at,
         d.resolved_at,
         o.order_number,
-        o.total_cents as amount_cents,
+        o.amount_cents,
         p.email as client_email,
-        p.username as client_name
+        p.display_name as client_name
       FROM disputes d
       LEFT JOIN orders o ON d.order_id = o.id
       LEFT JOIN profiles p ON o.client_id = p.id
