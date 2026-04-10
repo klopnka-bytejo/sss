@@ -93,33 +93,57 @@ export default function BecomeProPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('[v0] Form submitted')
     
+    // Validate form first
+    const validationError = validateForm()
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
     setLoading(true)
     setError(null)
 
     try {
-      console.log('[v0] Sending POST request to /api/apply-pro')
-      console.log('[v0] Form data:', { email: formData.email, fullName: formData.fullName })
-      
-      const res = await fetch('/api/submit-pro-application', {
+      const res = await fetch('/api/become-pro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       })
 
-      console.log('[v0] Response received, status:', res.status)
+      // Get response as text first
+      const text = await res.text()
       
-      const contentType = res.headers.get('content-type')
-      console.log('[v0] Content-Type:', contentType)
-      
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await res.text()
-        console.error('[v0] Non-JSON response, first 300 chars:', text.substring(0, 300))
+      // Try to parse as JSON
+      let data
+      try {
+        data = JSON.parse(text)
+      } catch {
+        console.error('[v0] Non-JSON response:', text.substring(0, 200))
         setError('Server error. Please try again later.')
         setLoading(false)
         return
       }
+
+      if (!res.ok) {
+        setError(data.message || data.error || 'Application submission failed')
+        setLoading(false)
+        return
+      }
+
+      // Success
+      setSuccess(true)
+      setLoading(false)
+      setTimeout(() => {
+        router.push('/')
+      }, 3000)
+    } catch (err) {
+      console.error('[v0] Submit error:', err)
+      const errorMsg = err instanceof Error ? err.message : 'An error occurred. Please try again.'
+      setError(errorMsg)
+      setLoading(false)
+    }
+  }
 
       const data = await res.json()
       console.log('[v0] Parsed JSON response:', data)
