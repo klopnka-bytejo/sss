@@ -109,7 +109,7 @@ export default function BecomeProPage() {
     try {
       console.log('[v0] Submitting application...', { email: formData.email, hasPassword: !!formData.password })
       
-      const res = await fetch('/api/test-submit', {
+      const res = await fetch('/api/pro-applications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -152,9 +152,9 @@ export default function BecomeProPage() {
                 <CheckCircle2 className="h-16 w-16 text-green-500 relative" />
               </div>
             </div>
-            <h2 className="text-2xl font-bold">Application Submitted!</h2>
+            <h2 className="text-2xl font-bold">Application Submitted Successfully!</h2>
             <p className="text-muted-foreground">
-              Your application has been submitted successfully. We will contact you through Discord to continue your application process.
+              We&apos;ll contact you soon on Discord to complete the application process. Please keep an eye on your Discord messages from our team.
             </p>
             <p className="text-sm text-muted-foreground">
               Redirecting to home page in a few seconds...
