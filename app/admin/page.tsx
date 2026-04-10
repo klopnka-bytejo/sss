@@ -12,9 +12,9 @@ export default async function AdminPage() {
     redirect("/auth/admin")
   }
 
-  // Handle temporary admin user (hardcoded credentials)
-  if (userId === 'admin-temp') {
-    // Just return empty dashboard for temp admin without trying to fetch stats
+  // Handle hardcoded admin user
+  if (userId === 'admin-hardcoded-user') {
+    // Just return empty dashboard for hardcoded admin without trying to fetch stats
     return (
       <AdminLayout>
         <AdminDashboard 

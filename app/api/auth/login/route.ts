@@ -23,7 +23,11 @@ export async function POST(request: NextRequest) {
     if (email === 'sanad.nassar@hotmail.com' && password === 'asdasx555' && role === 'admin') {
       console.log('[v0] Hardcoded admin credentials matched!')
       const cookieStore = await cookies()
-      cookieStore.set('user_id', 'admin-temp', {
+      
+      // Use a specific ID that represents the hardcoded admin
+      const adminId = 'admin-hardcoded-user'
+      
+      cookieStore.set('user_id', adminId, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
@@ -33,7 +37,7 @@ export async function POST(request: NextRequest) {
       console.log('[v0] Admin login successful, returning response')
       return NextResponse.json({ 
         user: {
-          id: 'admin-temp',
+          id: adminId,
           email: 'sanad.nassar@hotmail.com',
           display_name: 'Admin',
           role: 'admin'
