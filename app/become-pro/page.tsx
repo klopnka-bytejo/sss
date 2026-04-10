@@ -144,29 +144,6 @@ export default function BecomeProPage() {
       setLoading(false)
     }
   }
-
-      const data = await res.json()
-      console.log('[v0] Parsed JSON response:', data)
-
-      if (!res.ok) {
-        console.log('[v0] API returned error:', data.error)
-        setError(data.error || 'Application submission failed')
-        setLoading(false)
-        return
-      }
-
-      console.log('[v0] Success! Application submitted')
-      setSuccess(true)
-      setLoading(false)
-      setTimeout(() => {
-        router.push('/')
-      }, 3000)
-    } catch (err) {
-      console.error('[v0] Caught exception:', err)
-      const errorMsg = err instanceof Error ? err.message : 'An error occurred'
-      setError(errorMsg)
-      setLoading(false)
-    }
   }
 
   if (success) {
