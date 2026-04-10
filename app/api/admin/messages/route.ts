@@ -7,21 +7,31 @@ export async function GET(request: NextRequest) {
     const cookieStore = await cookies()
     const userId = cookieStore.get('user_id')?.value
 
+    console.log('[v0] Messages API - userId:', userId)
+
     if (!userId) {
+      console.log('[v0] Messages API - No userId in cookie')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Check if admin (hardcoded admin or database admin)
+    console.log('[v0] Messages API - Checking admin:', { 
+      isHardcoded: userId === 'admin-hardcoded-user'
+    })
+    
     if (userId === 'admin-hardcoded-user') {
       // Hardcoded admin is always authorized
+      console.log('[v0] Messages API - Hardcoded admin authorized')
     } else {
       const adminCheck = await sql`
         SELECT role FROM profiles WHERE id = ${userId}
       `
 
       if (!adminCheck || adminCheck.length === 0 || adminCheck[0].role !== 'admin') {
+        console.log('[v0] Messages API - Admin check failed')
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       }
+      console.log('[v0] Messages API - Database admin authorized')
     }
 
     // Get conversations with message counts
@@ -37,7 +47,7 @@ export async function GET(request: NextRequest) {
         p2.email as participant_2_email,
         (SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message,
         (SELECT COUNT(*)::int FROM messages WHERE conversation_id = c.id) as message_count,
-        (SELECT COUNT(*)::int FROM messages WHERE conversation_id = c.id AND read = false) as unread_count
+        (SELECT COUNT(*)::int FROM messages WHERE conversation_id = c.id AND is_read = false) as unread_count
       FROM conversations c
       LEFT JOIN profiles p1 ON c.participant_1_id = p1.id
       LEFT JOIN profiles p2 ON c.participant_2_id = p2.id
@@ -47,7 +57,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ conversations: conversations || [] })
   } catch (error) {
-    console.error('Messages error:', error)
-    return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 })
+    console.error('[v0] Messages API error:', error)
+    return NextResponse.json({ error: 'Failed to fetch messages', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 })
   }
 }

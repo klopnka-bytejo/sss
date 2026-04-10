@@ -26,18 +26,20 @@ export async function GET() {
     }
 
     // Fetch disputes with related data
-    const disputes = await sql`
-      SELECT 
-        d.id,
-        d.order_id,
-        d.opened_by,
-        d.reason,
-        d.status,
-        d.resolution,
-        d.created_at,
-        d.resolved_at,
-        o.order_number,
-        o.amount_cents,
+    let disputes
+    try {
+      disputes = await sql`
+        SELECT 
+          d.id,
+          d.order_id,
+          d.opened_by,
+          d.reason,
+          d.status,
+          d.resolution,
+          d.created_at,
+          d.resolved_at,
+          o.order_number,
+          o.amount_cents,
         p.email as client_email,
         p.display_name as client_name
       FROM disputes d

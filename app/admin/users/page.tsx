@@ -14,15 +14,28 @@ export default async function AdminUsersPage() {
   }
 
   // Fetch admin profile
-  const adminUsers = await sql`
-    SELECT * FROM profiles WHERE id = ${userId}
-  `
+  let adminProfile
+  if (userId === 'admin-hardcoded-user') {
+    // Hardcoded admin - create a temporary admin profile
+    adminProfile = {
+      id: 'admin-hardcoded-user',
+      email: 'sanad.nassar@hotmail.com',
+      display_name: 'Admin',
+      role: 'admin',
+      created_at: new Date(),
+      updated_at: new Date(),
+    }
+  } else {
+    const adminUsers = await sql`
+      SELECT * FROM profiles WHERE id = ${userId}
+    `
 
-  if (!adminUsers || adminUsers.length === 0 || adminUsers[0].role !== "admin") {
-    redirect("/dashboard")
+    if (!adminUsers || adminUsers.length === 0 || adminUsers[0].role !== "admin") {
+      redirect("/dashboard")
+    }
+
+    adminProfile = adminUsers[0]
   }
-
-  const adminProfile = adminUsers[0]
 
   // Fetch all users
   const users = await sql`
