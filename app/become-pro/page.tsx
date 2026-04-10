@@ -102,7 +102,7 @@ export default function BecomeProPage() {
       console.log('[v0] Sending POST request to /api/apply-pro')
       console.log('[v0] Form data:', { email: formData.email, fullName: formData.fullName })
       
-      const res = await fetch('/api/apply-pro', {
+      const res = await fetch('/api/submit-pro-application', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
