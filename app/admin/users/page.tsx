@@ -42,6 +42,11 @@ export default async function AdminUsersPage() {
     SELECT * FROM profiles ORDER BY created_at DESC
   `
 
+  console.log('[v0] Admin users page - fetched users count:', users?.length || 0)
+  if (users && users.length > 0) {
+    console.log('[v0] First user:', JSON.stringify(users[0], null, 2))
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -49,7 +54,8 @@ export default async function AdminUsersPage() {
           <h1 className="text-3xl font-bold">User Management</h1>
           <p className="text-muted-foreground">Manage all users and PROs on the platform</p>
         </div>
-        <AdminUsersContent users={users || []} currentUser={adminProfile} />
+        {console.log('[v0] Rendering users page with count:', users?.length || 0)}
+        <AdminUsersContent users={(users || []) as Profile[]} currentUser={adminProfile as Profile} />
       </div>
     </AdminLayout>
   )
