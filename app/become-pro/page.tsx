@@ -144,7 +144,6 @@ export default function BecomeProPage() {
       setLoading(false)
     }
   }
-  }
 
   if (success) {
     return (
