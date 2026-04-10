@@ -29,23 +29,29 @@ export default function AdminLoginPage() {
       })
 
       const data = await res.json()
+      console.log('[v0] Admin login response:', { status: res.status, data })
 
       if (!res.ok) {
+        console.log('[v0] Login failed, error:', data.error)
         setError(data.error || 'Login failed')
         setLoading(false)
         return
       }
 
       // Check if user is admin
+      console.log('[v0] User role:', data.user?.role)
       if (data.user?.role !== 'admin') {
+        console.log('[v0] User is not admin')
         setError('Access denied. This login is for administrators only.')
         setLoading(false)
         return
       }
 
       // Redirect to admin dashboard
+      console.log('[v0] Login successful, redirecting to /admin')
       window.location.href = '/admin'
     } catch (err) {
+      console.error('[v0] Admin login error:', err)
       setError('An unexpected error occurred')
       setLoading(false)
     }
