@@ -11,32 +11,31 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // User is authenticated via session cookie - that's enough for admin access
-    // The middleware already verified authentication, so we just fetch the data
-
-    // Get all PRO users
+    // Get all PRO users with their profiles
     const pros = await sql`
       SELECT 
         p.id,
         p.email,
-        p.display_name as username,
-        p.role,
-        pp.status,
-        p.created_at,
-        p.balance_cents,
-        p.total_earned_cents,
-        pp.total_orders as completed_orders,
+        p.display_name,
+        p.avatar_url,
+        p.country,
+        pp.bio,
         pp.rating,
-        pp.total_reviews
+        pp.total_orders,
+        pp.completion_rate,
+        pp.games
       FROM profiles p
       LEFT JOIN pro_profiles pp ON p.id = pp.user_id
       WHERE p.role = 'pro'
-      ORDER BY p.created_at DESC
+      ORDER BY pp.rating DESC NULLS LAST
+      LIMIT 100
     `
 
+    console.log('[v0] Admin PROs API - found PROs:', pros?.length || 0)
     return NextResponse.json({ pros: pros || [] })
   } catch (error) {
-    console.error('PROs error:', error)
-    return NextResponse.json({ error: 'Failed to fetch PROs' }, { status: 500 })
+    console.error('[v0] Admin PROs API error:', error instanceof Error ? error.message : error)
+    return NextResponse.json({ error: 'Internal server error', details: error instanceof Error ? error.message : String(error) }, { status: 500 })
   }
 }
+
