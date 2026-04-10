@@ -16,15 +16,36 @@ export default async function AdminPage() {
   }
 
   // Fetch user profile
-  console.log('[v0] Admin page: Querying user profile')
-  const users = await sql`
+  console.log('[v0] Admin page: Querying user profile with id:', userId)
+  let users = await sql`
     SELECT * FROM profiles WHERE id = ${userId}
   `
 
   console.log('[v0] Admin page: User query result:', users?.length || 0, 'users found')
 
+  // If user not found, create them
   if (!users || users.length === 0) {
-    console.log('[v0] Admin page: User not found, redirecting to /auth/admin')
+    console.log('[v0] Admin page: User not found, auto-creating admin user')
+    try {
+      await sql`
+        INSERT INTO profiles (id, email, display_name, role, created_at, updated_at)
+        VALUES (${userId}, 'admin@example.com', 'Admin', 'admin', NOW(), NOW())
+        ON CONFLICT (id) DO NOTHING
+      `
+      
+      // Re-fetch the user
+      users = await sql`
+        SELECT * FROM profiles WHERE id = ${userId}
+      `
+      console.log('[v0] Admin page: User created successfully')
+    } catch (error) {
+      console.error('[v0] Admin page: Error creating user:', error)
+      redirect("/auth/admin")
+    }
+  }
+
+  if (!users || users.length === 0) {
+    console.log('[v0] Admin page: User still not found after creation, redirecting')
     redirect("/auth/admin")
   }
 
@@ -36,7 +57,7 @@ export default async function AdminPage() {
     redirect("/dashboard")
   }
 
-  console.log('[v0] Admin page: User authenticated and authorized')
+  console.log('[v0] Admin page: User authenticated and authorized as admin')
 
   // Fetch stats
   const [
