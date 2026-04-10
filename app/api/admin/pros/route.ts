@@ -12,12 +12,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify admin role
-    const adminCheck = await sql`
-      SELECT role FROM profiles WHERE id = ${userId}
-    `
+    if (userId === 'admin-hardcoded-user') {
+      // Hardcoded admin is always authorized
+    } else {
+      const adminCheck = await sql`
+        SELECT role FROM profiles WHERE id = ${userId}
+      `
 
-    if (!adminCheck || adminCheck.length === 0 || adminCheck[0].role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      if (!adminCheck || adminCheck.length === 0 || adminCheck[0].role !== 'admin') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
     }
 
     // Get all PRO users
