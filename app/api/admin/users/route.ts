@@ -20,11 +20,18 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')
 
     let users
-    if (search) {
+    if (search && role && role !== 'all') {
       users = await sql`
         SELECT * FROM profiles 
-        WHERE (email ILIKE ${`%${search}%`} OR display_name ILIKE ${`%${search}%`})
-        ${role && role !== 'all' ? sql`AND role = ${role}` : sql``}
+        WHERE (email ILIKE ${'%' + search + '%'} OR display_name ILIKE ${'%' + search + '%'})
+        AND role = ${role}
+        ORDER BY created_at DESC 
+        LIMIT 100
+      `
+    } else if (search) {
+      users = await sql`
+        SELECT * FROM profiles 
+        WHERE (email ILIKE ${'%' + search + '%'} OR display_name ILIKE ${'%' + search + '%'})
         ORDER BY created_at DESC 
         LIMIT 100
       `

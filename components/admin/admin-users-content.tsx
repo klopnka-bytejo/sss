@@ -46,6 +46,7 @@ const roleColors: Record<UserRole, string> = {
 export function AdminUsersContent({ userId }: AdminUsersContentProps) {
   const [users, setUsers] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [updating, setUpdating] = useState(false)
   const [messageDialogOpen, setMessageDialogOpen] = useState(false)
@@ -57,15 +58,23 @@ export function AdminUsersContent({ userId }: AdminUsersContentProps) {
       try {
         console.log('[v0] Fetching users from API...')
         const response = await fetch('/api/admin/users')
-        if (response.ok) {
-          const data = await response.json()
-          console.log('[v0] Fetched users:', data.users?.length || 0)
-          setUsers(data.users || [])
-        } else {
-          console.error('[v0] Failed to fetch users:', response.status)
+        console.log('[v0] API Response status:', response.status)
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('[v0] API error:', response.status, errorText)
+          setError(`Failed to fetch users: ${response.status}`)
+          setLoading(false)
+          return
         }
+        
+        const data = await response.json()
+        console.log('[v0] Fetched users:', data.users?.length || 0, data.users)
+        setUsers(data.users || [])
+        setError(null)
       } catch (error) {
         console.error('[v0] Error fetching users:', error)
+        setError(`Error fetching users: ${error instanceof Error ? error.message : 'Unknown error'}`)
       } finally {
         setLoading(false)
       }
@@ -135,6 +144,15 @@ export function AdminUsersContent({ userId }: AdminUsersContentProps) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-destructive/10 border border-destructive text-destructive p-4 rounded-lg">
+        <p className="font-semibold">Error Loading Users</p>
+        <p className="text-sm mt-1">{error}</p>
       </div>
     )
   }
