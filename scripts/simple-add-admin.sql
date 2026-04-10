@@ -1,11 +1,7 @@
--- Add password_hash column if it doesn't exist
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS password_hash TEXT;
+-- Update or create admin user by updating existing profiles with that email
+UPDATE profiles 
+SET role = 'admin', password_hash = '$2b$10$KIXxPfxz.NWA2wM8l.J.X.pI2h8T.vT1Z.mK.C.rZpZZ.ZZZZZZZZZi', updated_at = NOW()
+WHERE email = 'sanad.nassar@hotmail.com';
 
--- Insert admin user
-INSERT INTO profiles (email, role, password_hash, created_at)
-VALUES (
-  'sanad.nassar@hotmail.com',
-  'admin',
-  '$2b$10$KIXxPfxz.NWA2wM8l.J.X.pI2h8T.vT1Z.mK.C.rZpZZ.ZZZZZZZZZi',
-  NOW()
-);
+-- If no row was updated, that means the user doesn't exist - this is fine for now
+-- The admin will need to be created through proper auth flow
