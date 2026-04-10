@@ -8,16 +8,23 @@ export default async function AdminPage() {
   const cookieStore = await cookies()
   const userId = cookieStore.get('user_id')?.value
   
+  console.log('[v0] Admin page - userId from cookie:', userId)
+  
   if (!userId) {
+    console.log('[v0] Admin page - No userId, redirecting')
     redirect("/auth/admin")
   }
 
   // Fetch user profile
+  console.log('[v0] Admin page - Querying user with id:', userId)
   const users = await sql`
     SELECT * FROM profiles WHERE id = ${userId}
   `
+  
+  console.log('[v0] Admin page - Query result:', users?.length || 0, 'users found')
 
   if (!users || users.length === 0) {
+    console.log('[v0] Admin page - No user found, redirecting')
     redirect("/auth/admin")
   }
 
