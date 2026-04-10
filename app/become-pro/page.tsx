@@ -93,9 +93,12 @@ export default function BecomeProPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('[v0] Form submitted, validating...')
     
     const validationError = validateForm()
+    console.log('[v0] Validation result:', validationError)
     if (validationError) {
+      console.log('[v0] Validation failed:', validationError)
       setError(validationError)
       return
     }
@@ -104,9 +107,9 @@ export default function BecomeProPage() {
     setError(null)
 
     try {
-      console.log('[v0] Submitting application...', { email: formData.email })
+      console.log('[v0] Submitting application...', { email: formData.email, hasPassword: !!formData.password })
       
-      const res = await fetch('/api/pro-applications', {
+      const res = await fetch('/api/test-submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -118,18 +121,22 @@ export default function BecomeProPage() {
       console.log('[v0] Response data:', data)
 
       if (!res.ok) {
+        console.log('[v0] API error:', data.error)
         setError(data.error || 'Application submission failed')
         setLoading(false)
         return
       }
 
+      console.log('[v0] Success! Showing success screen')
       setSuccess(true)
+      setLoading(false)
       setTimeout(() => {
         router.push('/')
       }, 3000)
     } catch (err) {
       console.error('[v0] Submit error:', err)
-      setError('An error occurred. Please try again.')
+      const errorMsg = err instanceof Error ? err.message : 'An error occurred. Please try again.'
+      setError(errorMsg)
       setLoading(false)
     }
   }
