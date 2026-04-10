@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     if (search && role && role !== 'all') {
       users = await sql`
         SELECT * FROM profiles 
-        WHERE (email ILIKE ${'%' + search + '%'} OR display_name ILIKE ${'%' + search + '%'})
+        WHERE (email ILIKE ${`%${search}%`} OR display_name ILIKE ${`%${search}%`})
         AND role = ${role}
         ORDER BY created_at DESC 
         LIMIT 100
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     } else if (search) {
       users = await sql`
         SELECT * FROM profiles 
-        WHERE (email ILIKE ${'%' + search + '%'} OR display_name ILIKE ${'%' + search + '%'})
+        WHERE (email ILIKE ${`%${search}%`} OR display_name ILIKE ${`%${search}%`})
         ORDER BY created_at DESC 
         LIMIT 100
       `
@@ -43,18 +43,14 @@ export async function GET(request: NextRequest) {
         LIMIT 100
       `
     } else {
-      users = await sql`
-        SELECT * FROM profiles 
-        ORDER BY created_at DESC 
-        LIMIT 100
-      `
+      users = await sql`SELECT * FROM profiles ORDER BY created_at DESC LIMIT 100`
     }
 
-    console.log('[v0] Admin users API - found users:', users?.length || 0)
+    console.log('[v0] Admin users API - found users:', users?.length || 0, 'users:', users)
     return NextResponse.json({ users: users || [] })
   } catch (error) {
-    console.error('Admin users error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('[v0] Admin users API error:', error instanceof Error ? error.message : error)
+    return NextResponse.json({ error: 'Internal server error', details: error instanceof Error ? error.message : String(error) }, { status: 500 })
   }
 }
 

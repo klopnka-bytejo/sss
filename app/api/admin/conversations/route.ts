@@ -36,11 +36,11 @@ export async function GET(request: NextRequest) {
       LIMIT 100
     `
 
-    console.log('[v0] Admin conversations API - found conversations:', conversations?.length || 0)
+    console.log('[v0] Admin conversations API - found conversations:', conversations?.length || 0, 'conversations:', conversations)
     return NextResponse.json({ conversations: conversations || [] })
   } catch (error) {
-    console.error('[v0] Admin conversations API error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('[v0] Admin conversations API error:', error instanceof Error ? error.message : error)
+    return NextResponse.json({ error: 'Internal server error', details: error instanceof Error ? error.message : String(error) }, { status: 500 })
   }
 }
 
