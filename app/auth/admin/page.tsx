@@ -22,19 +22,15 @@ export default function AdminLoginPage() {
     setError("")
 
     try {
-      console.log('[v0] Attempting login...')
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, role: 'admin' }),
       })
 
-      console.log('[v0] Response status:', res.status)
       const data = await res.json()
-      console.log('[v0] Response data:', data)
 
       if (!res.ok) {
-        console.log('[v0] Login failed:', data.error)
         setError(data.error || 'Login failed')
         setLoading(false)
         return
@@ -50,7 +46,6 @@ export default function AdminLoginPage() {
       // Redirect to admin dashboard using router for client-side navigation
       router.push('/admin')
     } catch (err) {
-      console.error('Login error:', err)
       setError('An unexpected error occurred')
       setLoading(false)
     }
