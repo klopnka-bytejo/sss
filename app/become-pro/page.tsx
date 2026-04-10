@@ -93,21 +93,14 @@ export default function BecomeProPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('[v0] Form submitted, validating...')
+    console.log('[v0] Form submitted')
     
-    const validationError = validateForm()
-    console.log('[v0] Validation result:', validationError)
-    if (validationError) {
-      console.log('[v0] Validation failed:', validationError)
-      setError(validationError)
-      return
-    }
-
     setLoading(true)
     setError(null)
 
     try {
-      console.log('[v0] Submitting application...', { email: formData.email, hasPassword: !!formData.password })
+      console.log('[v0] Sending POST request to /api/apply-pro')
+      console.log('[v0] Form data:', { email: formData.email, fullName: formData.fullName })
       
       const res = await fetch('/api/apply-pro', {
         method: 'POST',
@@ -115,37 +108,38 @@ export default function BecomeProPage() {
         body: JSON.stringify(formData),
       })
 
-      console.log('[v0] Response status:', res.status)
+      console.log('[v0] Response received, status:', res.status)
       
-      // Check if response is JSON
       const contentType = res.headers.get('content-type')
+      console.log('[v0] Content-Type:', contentType)
+      
       if (!contentType || !contentType.includes('application/json')) {
         const text = await res.text()
-        console.error('[v0] Non-JSON response:', text.substring(0, 200))
+        console.error('[v0] Non-JSON response, first 300 chars:', text.substring(0, 300))
         setError('Server error. Please try again later.')
         setLoading(false)
         return
       }
 
       const data = await res.json()
-      console.log('[v0] Response data:', data)
+      console.log('[v0] Parsed JSON response:', data)
 
       if (!res.ok) {
-        console.log('[v0] API error:', data.error)
+        console.log('[v0] API returned error:', data.error)
         setError(data.error || 'Application submission failed')
         setLoading(false)
         return
       }
 
-      console.log('[v0] Success! Showing success screen')
+      console.log('[v0] Success! Application submitted')
       setSuccess(true)
       setLoading(false)
       setTimeout(() => {
         router.push('/')
       }, 3000)
     } catch (err) {
-      console.error('[v0] Submit error:', err)
-      const errorMsg = err instanceof Error ? err.message : 'An error occurred. Please try again.'
+      console.error('[v0] Caught exception:', err)
+      const errorMsg = err instanceof Error ? err.message : 'An error occurred'
       setError(errorMsg)
       setLoading(false)
     }
