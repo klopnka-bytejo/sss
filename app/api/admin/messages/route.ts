@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
       LIMIT 100
     `
 
+    console.log('[v0] Admin messages API - found conversations:', conversations?.length || 0)
     return NextResponse.json({ conversations: conversations || [] })
   } catch (error) {
     console.error('[v0] Messages API error:', error)

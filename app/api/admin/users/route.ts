@@ -12,17 +12,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if admin (hardcoded admin or database admin)
-    if (userId === 'admin-hardcoded-user') {
-      // Hardcoded admin is always authorized
-    } else {
-      const adminCheck = await sql`
-        SELECT role FROM profiles WHERE id = ${userId}
-      `
+    // Check if admin
+    const adminCheck = await sql`
+      SELECT role FROM profiles WHERE id = ${userId}
+    `
 
-      if (!adminCheck || adminCheck.length === 0 || adminCheck[0].role !== 'admin') {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      }
+    if (!adminCheck || adminCheck.length === 0 || adminCheck[0].role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -53,6 +49,7 @@ export async function GET(request: NextRequest) {
       `
     }
 
+    console.log('[v0] Admin users API - found users:', users?.length || 0)
     return NextResponse.json({ users: users || [] })
   } catch (error) {
     console.error('Admin users error:', error)
@@ -70,17 +67,13 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if admin (hardcoded admin or database admin)
-    if (userId === 'admin-hardcoded-user') {
-      // Hardcoded admin is always authorized
-    } else {
-      const adminCheck = await sql`
-        SELECT role FROM profiles WHERE id = ${userId}
-      `
+    // Check if admin
+    const adminCheck = await sql`
+      SELECT role FROM profiles WHERE id = ${userId}
+    `
 
-      if (!adminCheck || adminCheck.length === 0 || adminCheck[0].role !== 'admin') {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      }
+    if (!adminCheck || adminCheck.length === 0 || adminCheck[0].role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const body = await request.json()
