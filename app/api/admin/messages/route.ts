@@ -7,31 +7,17 @@ export async function GET(request: NextRequest) {
     const cookieStore = await cookies()
     const userId = cookieStore.get('user_id')?.value
 
-    console.log('[v0] Messages API - userId:', userId)
-
     if (!userId) {
-      console.log('[v0] Messages API - No userId in cookie')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if admin (hardcoded admin or database admin)
-    console.log('[v0] Messages API - Checking admin:', { 
-      isHardcoded: userId === 'admin-hardcoded-user'
-    })
-    
-    if (userId === 'admin-hardcoded-user') {
-      // Hardcoded admin is always authorized
-      console.log('[v0] Messages API - Hardcoded admin authorized')
-    } else {
-      const adminCheck = await sql`
-        SELECT role FROM profiles WHERE id = ${userId}
-      `
+    // Check if admin
+    const adminCheck = await sql`
+      SELECT role FROM profiles WHERE id = ${userId}
+    `
 
-      if (!adminCheck || adminCheck.length === 0 || adminCheck[0].role !== 'admin') {
-        console.log('[v0] Messages API - Admin check failed')
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      }
-      console.log('[v0] Messages API - Database admin authorized')
+    if (!adminCheck || adminCheck.length === 0 || adminCheck[0].role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Get conversations with message counts

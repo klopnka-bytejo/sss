@@ -12,26 +12,6 @@ export default async function AdminPage() {
     redirect("/auth/admin")
   }
 
-  // Handle hardcoded admin user
-  if (userId === 'admin-hardcoded-user') {
-    // Just return empty dashboard for hardcoded admin without trying to fetch stats
-    return (
-      <AdminLayout>
-        <AdminDashboard 
-          stats={{
-            totalUsers: 0,
-            totalOrders: 0,
-            totalPros: 0,
-            recentOrders: [],
-            recentUsers: [],
-          }}
-          recentOrders={[]}
-          recentUsers={[]}
-        />
-      </AdminLayout>
-    )
-  }
-
   // Fetch user profile
   const users = await sql`
     SELECT * FROM profiles WHERE id = ${userId}
