@@ -109,13 +109,23 @@ export default function BecomeProPage() {
     try {
       console.log('[v0] Submitting application...', { email: formData.email, hasPassword: !!formData.password })
       
-      const res = await fetch('/api/pro-applications', {
+      const res = await fetch('/api/apply-pro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       })
 
       console.log('[v0] Response status:', res.status)
+      
+      // Check if response is JSON
+      const contentType = res.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await res.text()
+        console.error('[v0] Non-JSON response:', text.substring(0, 200))
+        setError('Server error. Please try again later.')
+        setLoading(false)
+        return
+      }
 
       const data = await res.json()
       console.log('[v0] Response data:', data)
