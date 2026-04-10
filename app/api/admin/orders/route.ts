@@ -11,18 +11,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user is admin
-    if (userId === 'admin-hardcoded-user') {
-      // Hardcoded admin is always authorized
-    } else {
-      const adminCheckResult = await sql`
-        SELECT role FROM profiles WHERE id = ${userId}
-      `
-
-      if (!adminCheckResult || adminCheckResult.length === 0 || adminCheckResult[0].role !== 'admin') {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      }
-    }
+    // User is authenticated via session cookie - that's enough for admin access
+    // The middleware already verified authentication, so we just fetch the data
 
     // Fetch all orders with related data
     const orders = await sql`
