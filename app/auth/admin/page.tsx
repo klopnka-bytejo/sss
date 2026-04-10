@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,26 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/auth/me')
+        if (res.ok) {
+          console.log('[v0] Auth admin page: User already authenticated, redirecting to /admin')
+          router.push('/admin')
+          return
+        }
+      } catch (err) {
+        console.log('[v0] Auth admin page: Not authenticated')
+      }
+      setIsCheckingAuth(false)
+    }
+
+    checkAuth()
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,6 +42,7 @@ export default function AdminLoginPage() {
     setError("")
 
     try {
+      console.log('[v0] Admin login: Attempting login with email:', email)
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -29,6 +50,7 @@ export default function AdminLoginPage() {
       })
 
       const data = await res.json()
+      console.log('[v0] Admin login: Response status:', res.status, 'user role:', data.user?.role)
 
       if (!res.ok) {
         setError(data.error || 'Login failed')
@@ -38,17 +60,31 @@ export default function AdminLoginPage() {
 
       // Check if user is admin
       if (data.user?.role !== 'admin') {
+        console.log('[v0] Admin login: User role is not admin')
         setError('Access denied. This login is for administrators only.')
         setLoading(false)
         return
       }
 
-      // Redirect to admin dashboard using router for client-side navigation
+      // Redirect to admin dashboard
+      console.log('[v0] Admin login: Login successful, redirecting to /admin')
       router.push('/admin')
     } catch (err) {
+      console.error('[v0] Admin login: Error:', err)
       setError('An unexpected error occurred')
       setLoading(false)
     }
+  }
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Checking authentication...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

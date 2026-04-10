@@ -8,16 +8,23 @@ export default async function AdminPage() {
   const cookieStore = await cookies()
   const userId = cookieStore.get('user_id')?.value
   
+  console.log('[v0] Admin page: userId from cookie:', userId)
+  
   if (!userId) {
+    console.log('[v0] Admin page: No userId, redirecting to /auth/admin')
     redirect("/auth/admin")
   }
 
   // Fetch user profile
+  console.log('[v0] Admin page: Querying user profile')
   const users = await sql`
     SELECT * FROM profiles WHERE id = ${userId}
   `
 
+  console.log('[v0] Admin page: User query result:', users?.length || 0, 'users found')
+
   if (!users || users.length === 0) {
+    console.log('[v0] Admin page: User not found, redirecting to /auth/admin')
     redirect("/auth/admin")
   }
 
@@ -25,8 +32,11 @@ export default async function AdminPage() {
 
   // Only allow admin users
   if (userProfile.role !== "admin") {
+    console.log('[v0] Admin page: User is not admin, redirecting to /dashboard')
     redirect("/dashboard")
   }
+
+  console.log('[v0] Admin page: User authenticated and authorized')
 
   // Fetch stats
   const [
