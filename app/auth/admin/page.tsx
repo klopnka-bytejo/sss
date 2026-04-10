@@ -23,9 +23,12 @@ export default function AdminLoginPage() {
       try {
         const res = await fetch('/api/auth/me')
         if (res.ok) {
-          console.log('[v0] Auth admin page: User already authenticated, redirecting to /admin')
-          router.push('/admin')
-          return
+          const data = await res.json()
+          if (data.user && data.user.id) {
+            console.log('[v0] Auth admin page: User already authenticated, redirecting to /admin')
+            router.push('/admin')
+            return
+          }
         }
       } catch (err) {
         console.log('[v0] Auth admin page: Not authenticated')
