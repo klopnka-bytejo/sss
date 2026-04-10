@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
 import { sql } from '@/lib/neon/server'
 
@@ -13,9 +14,6 @@ export async function GET() {
     }
 
     // User is authenticated via session cookie - that's enough for admin access
-    // The middleware already verified authentication, so we just fetch the data
-
-    // Fetch disputes with related data
     const disputes = await sql`
       SELECT 
         d.id,
@@ -39,6 +37,35 @@ export async function GET() {
     return NextResponse.json({ disputes: disputes || [] })
   } catch (error) {
     console.error('Admin disputes error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+// POST - Create a new dispute
+export async function POST(request: NextRequest) {
+  try {
+    const cookieStore = await cookies()
+    const userId = cookieStore.get('user_id')?.value
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { orderId, reason } = await request.json()
+
+    if (!orderId || !reason) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    const result = await sql`
+      INSERT INTO disputes (order_id, opened_by, reason, status, created_at)
+      VALUES (${orderId}, ${userId}, ${reason}, 'open', NOW())
+      RETURNING *
+    `
+
+    return NextResponse.json({ dispute: result[0] })
+  } catch (error) {
+    console.error('Admin disputes POST error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
