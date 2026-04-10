@@ -21,18 +21,24 @@ export default async function AdminPage() {
     totalProsResult,
     recentOrdersResult,
     recentUsersResult,
+    pendingDisputesResult,
+    pendingWithdrawalsResult,
   ] = await Promise.all([
     sql`SELECT COUNT(*) as count FROM profiles`,
     sql`SELECT COUNT(*) as count FROM orders`,
     sql`SELECT COUNT(*) as count FROM profiles WHERE role = 'pro'`,
     sql`SELECT * FROM orders ORDER BY created_at DESC LIMIT 5`,
     sql`SELECT * FROM profiles ORDER BY created_at DESC LIMIT 5`,
+    sql`SELECT COUNT(*) as count FROM disputes WHERE status != 'resolved'`,
+    sql`SELECT COUNT(*) as count FROM withdrawals WHERE status = 'pending'`,
   ])
 
   const stats = {
     totalUsers: totalUsersResult[0]?.count || 0,
     totalOrders: totalOrdersResult[0]?.count || 0,
     totalPros: totalProsResult[0]?.count || 0,
+    pendingDisputes: pendingDisputesResult[0]?.count || 0,
+    pendingWithdrawals: pendingWithdrawalsResult[0]?.count || 0,
     recentOrders: recentOrdersResult || [],
     recentUsers: recentUsersResult || [],
   }
