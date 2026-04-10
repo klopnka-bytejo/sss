@@ -41,10 +41,10 @@ export async function GET(
     // Mark messages as read
     await sql`
       UPDATE messages 
-      SET read = true
+      SET is_read = true, read_at = NOW()
       WHERE conversation_id = ${id} 
         AND sender_id != ${userId} 
-        AND read = false
+        AND is_read = false
     `
 
     return NextResponse.json({ 

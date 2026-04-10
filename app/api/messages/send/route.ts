@@ -54,12 +54,16 @@ export async function POST(request: NextRequest) {
       INSERT INTO messages (
         conversation_id,
         sender_id,
+        recipient_id,
         content,
+        is_read,
         created_at
       ) VALUES (
         ${conversationId},
         ${userId},
+        ${recipientId},
         ${message.trim()},
+        false,
         NOW()
       )
       RETURNING *
