@@ -6,14 +6,11 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Slider } from '@/components/ui/slider'
 import { 
-  Gamepad2, 
   ShoppingCart, 
   ArrowLeft,
   AlertCircle,
   Loader2,
-  ChevronRight,
   Star,
   Clock,
   User,
@@ -55,7 +52,6 @@ export default function GameDetailsPage() {
 
   const fetchGameAndServices = async () => {
     try {
-      console.log('[v0] Fetching services for game slug:', gameSlug)
       const response = await fetch(`/api/game-services?slug=${gameSlug}`)
       
       if (!response.ok) {
@@ -70,7 +66,6 @@ export default function GameDetailsPage() {
       }
       
       const data = await response.json()
-      console.log('[v0] Services fetched:', { game: data.game?.name, count: data.services?.length })
       
       setGame(data.game)
       setServices(data.services || [])
@@ -81,24 +76,10 @@ export default function GameDetailsPage() {
       setError(null)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error fetching services'
-      console.error('[v0] Fetch error:', message)
       setError(message)
       setGame(null)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const fetchServiceOptions = async (serviceId: string) => {
-    try {
-      const response = await fetch(`/api/game-services/${serviceId}/options`)
-      if (!response.ok) {
-        console.log('[v0] No service options available for this service')
-        return
-      }
-      const data = await response.json()
-    } catch (err) {
-      console.log('[v0] Service options not available')
     }
   }
 
@@ -113,8 +94,7 @@ export default function GameDetailsPage() {
       price: selectedService.price_cents / 100,
       quantity,
       gameSlug,
-      serviceName: selectedService.title,
-      selectedOptions,
+      gameName: game?.name,
       pro_name: selectedService.pro_name
     }
 
