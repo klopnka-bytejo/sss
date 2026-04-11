@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     ]
 
     console.log('[v0] Executing SQL query with', values.length, 'parameters')
-    const result = await sql(queryText, values)
+    const result = await sql.query(queryText, values)
 
     console.log('[v0] Application created successfully:', result[0]?.id)
 
