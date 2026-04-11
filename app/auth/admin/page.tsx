@@ -52,10 +52,22 @@ export default function AdminLoginPage() {
         body: JSON.stringify({ email, password, role: 'admin' }),
       })
 
-      const data = await res.json()
-      console.log('[v0] Admin login: Response status:', res.status, 'user role:', data.user?.role)
+      // Get response text first to handle non-JSON responses
+      const text = await res.text()
+      console.log('[v0] Admin login: Response status:', res.status, 'body:', text.substring(0, 100))
+
+      let data
+      try {
+        data = JSON.parse(text)
+      } catch (parseErr) {
+        console.error('[v0] Admin login: Non-JSON response:', text)
+        setError('Server returned invalid response. Please try again.')
+        setLoading(false)
+        return
+      }
 
       if (!res.ok) {
+        console.error('[v0] Admin login: Login failed -', data.error)
         setError(data.error || 'Login failed')
         setLoading(false)
         return
@@ -63,7 +75,7 @@ export default function AdminLoginPage() {
 
       // Check if user is admin
       if (data.user?.role !== 'admin') {
-        console.log('[v0] Admin login: User role is not admin')
+        console.log('[v0] Admin login: User role is not admin:', data.user?.role)
         setError('Access denied. This login is for administrators only.')
         setLoading(false)
         return

@@ -6,12 +6,15 @@ import { cookies } from 'next/headers'
 export async function POST(request: NextRequest) {
   try {
     const { email, password, role } = await request.json()
+    console.log('[v0] Login request: email:', email, 'role:', role, 'password provided:', !!password)
 
     if (!email || !password) {
+      console.log('[v0] Login: Missing email or password')
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
     }
 
     // Try to find user in database
+    console.log('[v0] Login: Querying user from database with email:', email)
     const users = await sql`
       SELECT id, email, display_name, role, password_hash
       FROM profiles 
@@ -24,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     const user = users[0]
-    console.log('[v0] Login: User found, email:', user.email, 'role:', user.role)
+    console.log('[v0] Login: User found, email:', user.email, 'role:', user.role, 'has_password_hash:', !!user.password_hash)
 
     // If admin role requested, verify user is admin
     if (role === 'admin' && user.role !== 'admin') {
@@ -34,15 +37,18 @@ export async function POST(request: NextRequest) {
 
     // Verify password
     if (!user.password_hash) {
-      console.log('[v0] Login: No password hash for user:', email)
+      console.log('[v0] Login: No password hash stored for user:', email)
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
 
+    console.log('[v0] Login: Verifying password for user:', email)
     const isValid = await verifyPassword(password, user.password_hash)
     if (!isValid) {
       console.log('[v0] Login: Invalid password for user:', email)
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
+
+    console.log('[v0] Login: Password verified successfully for user:', email)
 
     // Create session cookie
     const cookieStore = await cookies()
@@ -55,6 +61,7 @@ export async function POST(request: NextRequest) {
 
     console.log('[v0] Login: Login successful for user:', email, 'role:', user.role)
     return NextResponse.json({ 
+      success: true,
       user: {
         id: user.id,
         email: user.email,

@@ -13,13 +13,13 @@ export async function createUser(email: string, password: string, displayName: s
   try {
     const hashedPassword = await hashPassword(password)
     const result = await sql`
-      INSERT INTO profiles (email, display_name, role)
-      VALUES (${email}, ${displayName}, ${role})
+      INSERT INTO profiles (email, display_name, role, password_hash)
+      VALUES (${email}, ${displayName}, ${role}, ${hashedPassword})
       RETURNING id, email, display_name, role
     `
     return result[0]
   } catch (error) {
-    console.error('Failed to create user:', error)
+    console.error('[v0] Failed to create user:', error)
     throw error
   }
 }
