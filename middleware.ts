@@ -36,7 +36,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Allow protected routes if user is authenticated
-  if (pathname.startsWith('/client') || pathname.startsWith('/wallet') || pathname.startsWith('/dashboard')) {
+  if (pathname.startsWith('/client') || pathname.startsWith('/wallet') || pathname.startsWith('/dashboard') || pathname.startsWith('/pro') || pathname.startsWith('/admin') || pathname.startsWith('/orders') || pathname.startsWith('/settings') || pathname.startsWith('/profile')) {
     if (!userId) {
       console.log('[v0] Middleware: Protected route', pathname, '- no session, redirecting to /auth/login')
       return NextResponse.redirect(new URL('/auth/login', request.url))

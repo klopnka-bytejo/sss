@@ -14,7 +14,7 @@ export default async function WalletPage() {
 
   if (!userId) {
     console.log('[v0] Wallet page: No user session, redirecting to login')
-    redirect("/auth/login")
+    return redirect("/auth/login")
   }
 
   try {
@@ -27,7 +27,7 @@ export default async function WalletPage() {
 
     if (!users || users.length === 0) {
       console.log('[v0] Wallet page: User profile not found, redirecting to login')
-      redirect("/auth/login")
+      return redirect("/auth/login")
     }
 
     const profile = users[0]
@@ -65,7 +65,10 @@ export default async function WalletPage() {
       </AppLayout>
     )
   } catch (error) {
-    console.error('[v0] Wallet page error:', error)
-    redirect("/auth/login")
+    console.error('[v0] Wallet page error:', error instanceof Error ? error.message : error)
+    if (error instanceof Error) {
+      console.error('[v0] Wallet page stack:', error.stack)
+    }
+    return redirect("/auth/login")
   }
 }
