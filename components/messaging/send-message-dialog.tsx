@@ -39,6 +39,7 @@ export function SendMessageDialog({
 
     setLoading(true)
     try {
+      console.log('[v0] Send dialog: Sending message to', recipient.id)
       const response = await fetch('/api/messages/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -48,18 +49,23 @@ export function SendMessageDialog({
         }),
       })
 
+      console.log('[v0] Send dialog: Response status:', response.status)
+
       if (response.ok) {
+        const data = await response.json()
+        console.log('[v0] Send dialog: Message sent successfully:', data.message.id)
         setMessage('')
         alert('Message sent successfully!')
         onOpenChange(false)
         onMessageSent?.()
       } else {
         const error = await response.json()
-        alert(error.error || 'Failed to send message')
+        console.error('[v0] Send dialog: API error:', error)
+        alert(`Failed to send message: ${error.error || 'Unknown error'}${error.details ? ` (${error.details})` : ''}`)
       }
     } catch (error) {
-      console.error('[v0] Error sending message:', error)
-      alert('Error sending message')
+      console.error('[v0] Send dialog: Error sending message:', error)
+      alert('Error sending message: ' + (error instanceof Error ? error.message : 'Unknown error'))
     } finally {
       setLoading(false)
     }
