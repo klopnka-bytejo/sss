@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { sql } from '@/lib/neon/server'
 
+// ACTUAL messages table schema: id, conversation_id, sender_id, content, read, created_at
+// NO recipient_id, NO is_read, NO read_at, NO updated_at
+
 export async function GET(request: Request) {
   try {
     const cookieStore = await cookies()
@@ -26,15 +29,14 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Unauthorized access to conversation' }, { status: 403 })
       }
 
+      // Using actual schema columns: id, conversation_id, sender_id, content, read, created_at
       const messages = await sql`
         SELECT 
           m.id,
           m.conversation_id,
           m.sender_id,
-          m.recipient_id,
           m.content,
-          m.is_read,
-          m.read_at,
+          m.read,
           m.created_at,
           p.display_name as sender_name,
           p.avatar_url as sender_avatar
@@ -45,14 +47,14 @@ export async function GET(request: Request) {
         LIMIT 100
       `
       
-      // Mark messages as read if they were sent to current user
+      // Mark messages as read (messages not from current user)
       if (messages && messages.length > 0) {
         await sql`
           UPDATE messages 
-          SET is_read = true, read_at = NOW()
+          SET read = true
           WHERE conversation_id = ${conversationId} 
-            AND recipient_id = ${userId} 
-            AND is_read = false
+            AND sender_id != ${userId} 
+            AND read = false
         `
       }
 
@@ -80,7 +82,7 @@ export async function GET(request: Request) {
           ELSE c.participant_1_id
         END as other_user_id,
         (SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message,
-        (SELECT COUNT(*)::int FROM messages WHERE conversation_id = c.id AND recipient_id = ${userId} AND is_read = false) as unread_count
+        (SELECT COUNT(*)::int FROM messages WHERE conversation_id = c.id AND sender_id != ${userId} AND read = false) as unread_count
       FROM conversations c
       LEFT JOIN profiles p1 ON c.participant_1_id = p1.id
       LEFT JOIN profiles p2 ON c.participant_2_id = p2.id
@@ -112,7 +114,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // Verify user is part of this conversation and get the other participant
+    // Verify user is part of this conversation
     const conversation = await sql`
       SELECT 
         id,
@@ -126,29 +128,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
     }
 
-    const conv = conversation[0]
-    const recipientId = conv.participant_1_id === userId ? conv.participant_2_id : conv.participant_1_id
-
-    // Create message using template literal with correct column names
+    // Create message using ACTUAL schema columns: conversation_id, sender_id, content, read
     const newMessage = await sql`
       INSERT INTO messages (
         conversation_id,
         sender_id,
-        recipient_id,
         content,
-        is_read,
-        created_at,
-        updated_at
+        read
       ) VALUES (
         ${conversationId},
         ${userId},
-        ${recipientId},
         ${content.trim()},
-        false,
-        NOW(),
-        NOW()
+        false
       )
-      RETURNING *
+      RETURNING id, conversation_id, sender_id, content, read, created_at
     `
 
     // Update conversation last_message_at

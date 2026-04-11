@@ -34,6 +34,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Prevent sending message to yourself
+    if (recipientId === userId) {
+      return NextResponse.json({ error: 'Cannot send message to yourself' }, { status: 400 })
+    }
+
     // Check if recipient exists using template literal
     const recipientResult = await sql`SELECT id FROM profiles WHERE id = ${recipientId}`
 
