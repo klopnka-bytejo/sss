@@ -81,13 +81,9 @@ export default function BecomeProPage() {
     if (!formData.fullName.trim()) return 'Full name is required'
     if (!formData.email.includes('@')) return 'Valid email is required'
     if (!formData.password || formData.password.length < 8) return 'Password must be at least 8 characters'
-    if (!formData.discordUsername.trim()) return 'Discord username is required'
-    if (!formData.gamerTag.trim()) return 'Gamer tag is required'
     if (formData.games.length === 0) return 'Select at least one game'
     if (!formData.country) return 'Country/Region is required'
     if (formData.country === 'Other' && !formData.customCountry.trim()) return 'Please specify your country'
-    if (!formData.yearsOfExperience) return 'Experience level is required'
-    if (formData.bio.trim().length < 20) return 'Bio must be at least 20 characters'
     return null
   }
 
