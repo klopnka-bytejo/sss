@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       `
       
       const unreadCount = await sql`
-        SELECT COUNT(*) as count FROM messages WHERE conversation_id = ${conv.id} AND sender_id != ${userId} AND is_read = false
+        SELECT COUNT(*) as count FROM messages WHERE conversation_id = ${conv.id} AND sender_id != ${userId} AND read = false
       `
 
       return {
