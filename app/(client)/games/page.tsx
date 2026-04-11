@@ -59,27 +59,6 @@ export default function GamesPage() {
     }
   }
 
-  const addToCart = (game: Game) => {
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-    const existingItem = cart.find((item: any) => item.id === game.id && item.type === 'game')
-    
-    if (existingItem) {
-      existingItem.quantity += 1
-    } else {
-      cart.push({
-        id: game.id,
-        type: 'game',
-        name: game.name,
-        price: 19.99,
-        quantity: 1,
-        logo_url: game.logo_url
-      })
-    }
-    
-    localStorage.setItem('cart', JSON.stringify(cart))
-    updateCartCount()
-  }
-
   const filteredGames = games.filter(game => 
     game.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     game.description?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -246,11 +225,13 @@ export default function GamesPage() {
                       </div>
                       <Button 
                         size="sm" 
-                        onClick={() => addToCart(game)}
                         className="gradient-primary border-0 h-8"
+                        asChild
                       >
-                        View Services
-                        <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                        <Link href={`/games/${game.slug}`}>
+                          View Services
+                          <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                        </Link>
                       </Button>
                     </div>
                   </CardContent>
