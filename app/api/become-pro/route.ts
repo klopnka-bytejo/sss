@@ -30,17 +30,25 @@ export async function POST(request: NextRequest) {
     const finalCountry = country === 'Other' ? customCountry : country
     const passwordHash = Buffer.from(password).toString('base64')
     const gamesJson = JSON.stringify(games)
+    
+    // Pre-process optional fields - use empty string instead of null since columns are NOT NULL
+    const discordUsernameValue = discordUsername?.trim() || ''
+    const gamerTagValue = gamerTag?.trim() || ''
+    const yearsOfExperienceValue = yearsOfExperience?.trim() || ''
+    const bioValue = bio?.trim() || 'No bio provided'
 
     console.log('[v0] Inserting into database with:', {
-      full_name: fullName,
-      email: email,
-      country: finalCountry,
+      full_name: fullName.trim(),
+      email: email.trim(),
+      country: finalCountry.trim(),
       games: games.length + ' games',
-      has_discord: !!discordUsername,
-      has_gamer_tag: !!gamerTag
+      discord_username: discordUsernameValue,
+      gamer_tag: gamerTagValue,
+      years_of_experience: yearsOfExperienceValue,
+      bio: bioValue
     })
 
-    // Insert application - use NULL for optional fields
+    // Insert application
     const result = await sql`
       INSERT INTO pro_applications (
         full_name, 
@@ -59,12 +67,12 @@ export async function POST(request: NextRequest) {
         ${fullName.trim()}, 
         ${email.trim()}, 
         ${passwordHash}, 
-        ${discordUsername?.trim() || null}, 
-        ${gamerTag?.trim() || null},
+        ${discordUsernameValue}, 
+        ${gamerTagValue},
         ${gamesJson}, 
         ${finalCountry.trim()}, 
-        ${yearsOfExperience?.trim() || null}, 
-        ${bio?.trim() || null},
+        ${yearsOfExperienceValue}, 
+        ${bioValue},
         'pending', 
         NOW(),
         NOW()
