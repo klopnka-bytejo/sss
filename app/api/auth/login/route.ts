@@ -50,9 +50,15 @@ export async function POST(request: NextRequest) {
 
     console.log('[v0] Login: Password verified successfully for user:', email)
 
-    // Create session cookie
+    // Create session cookies
     const cookieStore = await cookies()
     cookieStore.set('user_id', user.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+    })
+    cookieStore.set('user_role', user.role, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

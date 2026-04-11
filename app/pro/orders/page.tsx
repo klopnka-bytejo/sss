@@ -68,7 +68,10 @@ export default function ProOrdersPage() {
       })
 
       if (!response.ok) {
-        router.push('/auth/login')
+        // Don't redirect - just show empty state
+        // User might need to re-login to refresh their session
+        console.error('[v0] Failed to fetch orders:', response.status)
+        setOrders([])
         return
       }
 
@@ -76,6 +79,7 @@ export default function ProOrdersPage() {
       setOrders(data.orders || [])
     } catch (error) {
       console.error('[v0] Failed to fetch orders:', error)
+      setOrders([])
     } finally {
       setLoading(false)
     }

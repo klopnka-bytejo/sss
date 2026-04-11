@@ -2,14 +2,25 @@ import { sql } from '@/lib/neon/server'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
+// Helper to verify PRO role from database
+async function verifyProRole(userId: string): Promise<boolean> {
+  const users = await sql`SELECT role FROM profiles WHERE id = ${userId}`
+  return users && users.length > 0 && users[0].role === 'pro'
+}
+
 export async function GET() {
   try {
     const cookieStore = await cookies()
     const userId = cookieStore.get('user_id')?.value
-    const userRole = cookieStore.get('user_role')?.value
 
-    if (!userId || userRole !== 'pro') {
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Verify PRO role from database
+    const isPro = await verifyProRole(userId)
+    if (!isPro) {
+      return NextResponse.json({ error: 'Unauthorized - PRO access required' }, { status: 401 })
     }
 
     // Get available orders (paid but not assigned to any PRO)
