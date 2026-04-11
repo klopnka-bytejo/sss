@@ -87,10 +87,11 @@ export async function POST(
       `
     } else {
       // Create a new profile with role 'pro'
+      // profiles.id has NO default, so we must generate UUID explicitly
       const passwordHash = await hashPassword(password)
       const newProfile = await sql`
-        INSERT INTO profiles (email, display_name, role, password_hash, created_at, updated_at)
-        VALUES (${app.email}, ${app.display_name}, 'pro', ${passwordHash}, NOW(), NOW())
+        INSERT INTO profiles (id, email, display_name, role, password_hash, created_at, updated_at)
+        VALUES (gen_random_uuid(), ${app.email}, ${app.display_name}, 'pro', ${passwordHash}, NOW(), NOW())
         RETURNING id
       `
       profileId = newProfile[0].id
