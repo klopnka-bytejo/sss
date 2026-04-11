@@ -44,16 +44,23 @@ export default async function WalletPage() {
       updated_at: profile.updated_at,
     }
 
-    // Fetch transactions
-    const transactions = await sql`
-      SELECT id, user_id, type, amount_cents, description, status, created_at
-      FROM transactions
-      WHERE user_id = ${userId}
-      ORDER BY created_at DESC
-      LIMIT 50
-    `
-
-    console.log('[v0] Wallet page: Found', transactions?.length || 0, 'transactions')
+    // Fetch transactions - don't fail if table doesn't exist or query fails
+    let transactions = []
+    try {
+      const result = await sql`
+        SELECT id, user_id, type, amount_cents, description, status, balance_after_cents, created_at
+        FROM transactions
+        WHERE user_id = ${userId}
+        ORDER BY created_at DESC
+        LIMIT 50
+      `
+      transactions = result || []
+      console.log('[v0] Wallet page: Found', transactions.length, 'transactions')
+    } catch (txError) {
+      console.warn('[v0] Wallet page: Could not fetch transactions:', txError instanceof Error ? txError.message : txError)
+      // Continue with empty transactions array - don't crash the page
+      transactions = []
+    }
 
     return (
       <AppLayout 
@@ -61,14 +68,15 @@ export default async function WalletPage() {
         userRole={userProfile.role}
         user={userProfile}
       >
-        <WalletContent user={userProfile} transactions={transactions || []} />
+        <WalletContent user={userProfile} transactions={transactions} />
       </AppLayout>
     )
   } catch (error) {
-    console.error('[v0] Wallet page error:', error instanceof Error ? error.message : error)
+    console.error('[v0] Wallet page error loading profile:', error instanceof Error ? error.message : error)
     if (error instanceof Error) {
       console.error('[v0] Wallet page stack:', error.stack)
     }
+    // Only redirect if profile load fails - not transaction issues
     return redirect("/auth/login")
   }
 }
