@@ -45,28 +45,36 @@ export default function ClientMessagesPage() {
 
   const fetchCurrentUser = async () => {
     try {
+      console.log('[v0] Messages page: Fetching current user')
       const res = await fetch('/api/auth/me', {
         credentials: 'include',
       })
       if (res.ok) {
         const data = await res.json()
+        console.log('[v0] Messages page: Current user fetched:', data.user?.id)
         setCurrentUserId(data.user.id)
+      } else {
+        console.log('[v0] Messages page: Auth failed, status:', res.status)
       }
     } catch (error) {
-      console.error('[v0] Failed to fetch current user:', error)
+      console.error('[v0] Messages page: Failed to fetch current user:', error)
     }
   }
 
   const fetchConversations = async () => {
     try {
       setLoading(true)
+      console.log('[v0] Messages page: Fetching conversations')
       const res = await fetch('/api/conversations', {
         credentials: 'include',
       })
+      console.log('[v0] Messages page: Conversations response status:', res.status)
       const data = await res.json()
+      console.log('[v0] Messages page: Conversations fetched:', data.conversations?.length || 0, 'total')
       setConversations(data.conversations || [])
     } catch (error) {
-      console.error('[v0] Failed to fetch conversations:', error)
+      console.error('[v0] Messages page: Failed to fetch conversations:', error)
+      setConversations([])
     } finally {
       setLoading(false)
     }

@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   // Allow all API routes to pass through without auth redirects
   if (request.nextUrl.pathname.startsWith('/api')) {
+    console.log('[v0] Middleware: API route allowed:', request.nextUrl.pathname.substring(0, 50))
     return NextResponse.next()
   }
 
@@ -20,20 +21,31 @@ export function middleware(request: NextRequest) {
   const userId = request.cookies.get('user_id')?.value
   const pathname = request.nextUrl.pathname
 
-  console.log('[v0] Middleware:', { pathname, userId: userId ? 'present' : 'missing' })
+  console.log('[v0] Middleware: Route:', pathname, 'User:', userId ? 'authenticated' : 'not authenticated')
 
   // Protect admin routes - redirect to auth if not logged in
   if (pathname.startsWith('/admin') && !userId) {
-    console.log('[v0] Middleware: Redirecting /admin to /auth/admin (no user)')
+    console.log('[v0] Middleware: Admin route - no user, redirecting to /auth/admin')
     return NextResponse.redirect(new URL('/auth/admin', request.url))
   }
 
   // Redirect authenticated users away from auth pages
   if (pathname.startsWith('/auth/admin') && userId) {
-    console.log('[v0] Middleware: Redirecting /auth/admin to /admin (user logged in)')
+    console.log('[v0] Middleware: User at auth page - redirecting to /admin')
     return NextResponse.redirect(new URL('/admin', request.url))
   }
 
+  // Allow protected routes if user is authenticated
+  if (pathname.startsWith('/client') || pathname.startsWith('/wallet') || pathname.startsWith('/dashboard')) {
+    if (!userId) {
+      console.log('[v0] Middleware: Protected route', pathname, '- no session, redirecting to /auth/login')
+      return NextResponse.redirect(new URL('/auth/login', request.url))
+    }
+    console.log('[v0] Middleware: Protected route', pathname, '- user authenticated, allowing')
+    return NextResponse.next()
+  }
+
+  console.log('[v0] Middleware: Public route, allowing')
   return NextResponse.next()
 }
 
