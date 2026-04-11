@@ -4,73 +4,81 @@ import { sql } from '@/lib/neon/server'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const gameId = searchParams.get('gameId')
     const gameSlug = searchParams.get('slug')
 
-    let services
-    
-    if (gameId) {
-      services = await sql`
+    // If no slug provided, return all active services
+    if (!gameSlug) {
+      const services = await sql`
         SELECT 
-          gs.id,
-          gs.game_id,
-          gs.name,
-          gs.description,
-          gs.pricing_type,
-          gs.base_price_cents,
-          gs.delivery_time,
-          gs.category,
-          gs.is_active,
-          g.name as game_name,
-          g.slug as game_slug
-        FROM game_services gs
-        JOIN games g ON gs.game_id = g.id
-        WHERE gs.game_id = ${gameId} AND gs.is_active = true
-        ORDER BY gs.sort_order ASC, gs.name ASC
+          s.id,
+          s.title,
+          s.description,
+          s.price_cents,
+          s.duration_minutes,
+          s.category,
+          p.display_name as pro_name,
+          p.avatar_url as pro_avatar
+        FROM services s
+        LEFT JOIN profiles p ON s.user_id = p.id
+        WHERE s.active = true
+        ORDER BY s.created_at DESC
+        LIMIT 50
       `
-    } else if (gameSlug) {
-      services = await sql`
-        SELECT 
-          gs.id,
-          gs.game_id,
-          gs.name,
-          gs.description,
-          gs.pricing_type,
-          gs.base_price_cents,
-          gs.delivery_time,
-          gs.category,
-          gs.is_active,
-          g.name as game_name,
-          g.slug as game_slug
-        FROM game_services gs
-        JOIN games g ON gs.game_id = g.id
-        WHERE g.slug = ${gameSlug} AND gs.is_active = true
-        ORDER BY gs.sort_order ASC, gs.name ASC
-      `
-    } else {
-      services = await sql`
-        SELECT 
-          gs.id,
-          gs.game_id,
-          gs.name,
-          gs.description,
-          gs.pricing_type,
-          gs.base_price_cents,
-          gs.delivery_time,
-          gs.category,
-          gs.is_active,
-          g.name as game_name,
-          g.slug as game_slug
-        FROM game_services gs
-        JOIN games g ON gs.game_id = g.id
-        WHERE gs.is_active = true
-        ORDER BY g.sort_order ASC, gs.sort_order ASC
-      `
+      
+      return NextResponse.json({ 
+        services: services || [], 
+        success: true 
+      })
     }
 
-    return NextResponse.json({ services: services || [], success: true })
+    // Get game by slug
+    const gameResult = await sql`
+      SELECT id, name, slug, logo_url, banner_url, description
+      FROM games
+      WHERE slug = ${gameSlug} AND is_active = true
+    `
+
+    // If game not found, return 404 with empty services
+    if (!gameResult || gameResult.length === 0) {
+      return NextResponse.json({ 
+        error: 'Game not found',
+        services: [],
+        game: null
+      }, { status: 404 })
+    }
+
+    const game = gameResult[0]
+
+    // Get services related to this game
+    // Since there's no game_id in services, we return popular services
+    const services = await sql`
+      SELECT 
+        s.id,
+        s.title,
+        s.description,
+        s.price_cents,
+        s.duration_minutes,
+        s.category,
+        p.display_name as pro_name,
+        p.avatar_url as pro_avatar
+      FROM services s
+      LEFT JOIN profiles p ON s.user_id = p.id
+      WHERE s.active = true
+      ORDER BY s.created_at DESC
+      LIMIT 10
+    `
+
+    return NextResponse.json({ 
+      game,
+      services: services || [], 
+      success: true 
+    })
   } catch (error) {
     console.error('[v0] Get game services error:', error)
-    return NextResponse.json({ error: 'Failed to fetch services', services: [] }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Failed to fetch services', 
+      services: [],
+      success: false
+    }, { status: 500 })
   }
 }

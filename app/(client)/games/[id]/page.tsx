@@ -25,23 +25,11 @@ interface Service {
   id: string
   title: string
   description: string
-  base_price_cents: number
-  pricing_type: 'fixed' | 'dynamic'
-  delivery_time_minutes: number
-  pro_id: string
-  pro_name: string
-}
-
-interface ServiceOption {
-  id: string
-  name: string
-  type: string
-  base_value: string
-  price_modifier_cents: number
-}
-
-interface SelectedOptions {
-  [key: string]: string
+  price_cents: number
+  duration_minutes: number
+  category?: string
+  pro_name?: string
+  pro_avatar?: string
 }
 
 export default function GameDetailsPage() {
@@ -53,9 +41,6 @@ export default function GameDetailsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedService, setSelectedService] = useState<Service | null>(null)
-  const [serviceOptions, setServiceOptions] = useState<ServiceOption[]>([])
-  const [selectedOptions, setSelectedOptions] = useState<SelectedOptions>({})
-  const [calculatedPrice, setCalculatedPrice] = useState(0)
   const [quantity, setQuantity] = useState(1)
 
   useEffect(() => {
@@ -65,24 +50,40 @@ export default function GameDetailsPage() {
   useEffect(() => {
     if (selectedService) {
       fetchServiceOptions(selectedService.id)
-      calculatePrice()
     }
-  }, [selectedService, selectedOptions, quantity])
+  }, [selectedService])
 
   const fetchGameAndServices = async () => {
     try {
-      const response = await fetch(`/api/game-services?game_slug=${gameSlug}`)
-      if (!response.ok) throw new Error('Failed to fetch services')
+      console.log('[v0] Fetching services for game slug:', gameSlug)
+      const response = await fetch(`/api/game-services?slug=${gameSlug}`)
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          setError('Game not found')
+          setGame(null)
+        } else {
+          throw new Error(`HTTP ${response.status}`)
+        }
+        setLoading(false)
+        return
+      }
       
       const data = await response.json()
+      console.log('[v0] Services fetched:', { game: data.game?.name, count: data.services?.length })
+      
       setGame(data.game)
       setServices(data.services || [])
       
       if (data.services && data.services.length > 0) {
         setSelectedService(data.services[0])
       }
+      setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error fetching services')
+      const message = err instanceof Error ? err.message : 'Error fetching services'
+      console.error('[v0] Fetch error:', message)
+      setError(message)
+      setGame(null)
     } finally {
       setLoading(false)
     }
@@ -91,36 +92,13 @@ export default function GameDetailsPage() {
   const fetchServiceOptions = async (serviceId: string) => {
     try {
       const response = await fetch(`/api/game-services/${serviceId}/options`)
-      if (!response.ok) throw new Error('Failed to fetch options')
-      
+      if (!response.ok) {
+        console.log('[v0] No service options available for this service')
+        return
+      }
       const data = await response.json()
-      setServiceOptions(data.options || [])
-      setSelectedOptions({})
     } catch (err) {
-      console.error('Error fetching options:', err)
-    }
-  }
-
-  const calculatePrice = async () => {
-    if (!selectedService) return
-
-    try {
-      const response = await fetch('/api/calculate-price', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          serviceId: selectedService.id,
-          selectedOptions,
-          quantity
-        })
-      })
-
-      if (!response.ok) throw new Error('Failed to calculate price')
-      
-      const data = await response.json()
-      setCalculatedPrice(data.total_cents)
-    } catch (err) {
-      console.error('Error calculating price:', err)
+      console.log('[v0] Service options not available')
     }
   }
 
@@ -132,12 +110,12 @@ export default function GameDetailsPage() {
       id: selectedService.id,
       type: 'service',
       name: selectedService.title,
-      price: calculatedPrice / 100,
+      price: selectedService.price_cents / 100,
       quantity,
       gameSlug,
       serviceName: selectedService.title,
       selectedOptions,
-      pro_id: selectedService.pro_id
+      pro_name: selectedService.pro_name
     }
 
     cart.push(cartItem)
@@ -228,22 +206,26 @@ export default function GameDetailsPage() {
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">
                             <h3 className="font-semibold text-lg mb-1">{service.title}</h3>
-                            <p className="text-sm text-muted-foreground">{service.description}</p>
+                            <p className="text-sm text-muted-foreground line-clamp-2">{service.description}</p>
                           </div>
                           <Badge variant="secondary" className="ml-4">
-                            {service.pricing_type === 'dynamic' ? 'Custom Pricing' : 'Fixed Price'}
+                            ${(service.price_cents / 100).toFixed(2)}
                           </Badge>
                         </div>
 
                         <div className="flex items-center gap-6 text-sm text-muted-foreground pt-3 border-t border-border/50">
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4" />
-                            <span>{service.pro_name}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4" />
-                            <span>{service.delivery_time_minutes} min delivery</span>
-                          </div>
+                          {service.pro_name && (
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4" />
+                              <span>{service.pro_name}</span>
+                            </div>
+                          )}
+                          {service.duration_minutes && (
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4" />
+                              <span>{service.duration_minutes} min</span>
+                            </div>
+                          )}
                           <div className="flex items-center gap-1">
                             <Star className="h-4 w-4 fill-warning text-warning" />
                             <span>4.9</span>
@@ -265,31 +247,6 @@ export default function GameDetailsPage() {
                   </CardHeader>
 
                   <CardContent className="space-y-6">
-                    {/* Options */}
-                    {serviceOptions.length > 0 && (
-                      <div className="space-y-4">
-                        <h4 className="font-semibold text-sm">Customize Your Order</h4>
-                        {serviceOptions.map((option) => (
-                          <div key={option.id} className="space-y-2">
-                            <label className="text-sm font-medium">{option.name}</label>
-                            <select
-                              value={selectedOptions[option.id] || option.base_value}
-                              onChange={(e) =>
-                                setSelectedOptions({
-                                  ...selectedOptions,
-                                  [option.id]: e.target.value
-                                })
-                              }
-                              className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm"
-                            >
-                              <option value={option.base_value}>{option.base_value}</option>
-                              {/* Additional options would be populated here */}
-                            </select>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
                     {/* Quantity */}
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Quantity</label>
@@ -316,27 +273,15 @@ export default function GameDetailsPage() {
                     <div className="space-y-2 pt-4 border-t border-border/50">
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Base Price:</span>
-                        <span className="font-medium">${(selectedService.base_price_cents / 100).toFixed(2)}</span>
+                        <span className="font-medium">${(selectedService.price_cents / 100).toFixed(2)}</span>
                       </div>
-                      {Object.keys(selectedOptions).length > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Options:</span>
-                          <span className="font-medium">
-                            +${(
-                              serviceOptions.reduce((sum, opt) => {
-                                return sum + (selectedOptions[opt.id] ? opt.price_modifier_cents : 0)
-                              }, 0) / 100
-                            ).toFixed(2)}
-                          </span>
-                        </div>
-                      )}
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Quantity:</span>
                         <span className="font-medium">×{quantity}</span>
                       </div>
                       <div className="flex justify-between text-lg font-bold pt-2 border-t border-border/50">
                         <span>Total:</span>
-                        <span className="text-gradient">${(calculatedPrice / 100).toFixed(2)}</span>
+                        <span className="text-gradient">${((selectedService.price_cents / 100) * quantity).toFixed(2)}</span>
                       </div>
                     </div>
 
