@@ -31,7 +31,7 @@ export default async function LandingPage() {
   // Removed database queries - will fetch data client-side if needed
   
   return (
-    <div className="min-h-screen bg-background"
+    <div className="min-h-screen bg-background">
       <ThemeToggle />
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/30">
