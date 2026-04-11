@@ -61,7 +61,7 @@ export default function ClientOrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch('/api/orders', {
+      const response = await fetch('/api/client/orders', {
         credentials: 'include',
       })
 

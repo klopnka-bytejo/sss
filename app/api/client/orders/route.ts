@@ -11,25 +11,24 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Fetch all orders for the client with service and PRO info
+    // Fetch all orders for the client using ACTUAL schema columns
+    // Schema has: id, order_number, client_id, pro_id, service_id, amount_cents, status, payment_method, stripe_payment_id, created_at, updated_at
+    // NO: platform_fee_cents, pro_payout_cents, payment_status, notes
     const orders = await sql`
       SELECT 
         o.id,
         o.order_number,
-        o.service_id,
+        o.client_id,
         o.pro_id,
+        o.service_id,
         o.amount_cents,
-        o.platform_fee_cents,
-        o.pro_payout_cents,
         o.status,
-        o.payment_status,
-        o.notes,
+        o.payment_method,
+        o.stripe_payment_id,
         o.created_at,
         o.updated_at,
         s.title as service_title,
         s.category as service_category,
-        s.game as service_game,
-        s.delivery_time,
         p.display_name as pro_name,
         p.avatar_url as pro_avatar,
         pp.rating as pro_rating,
@@ -43,10 +42,9 @@ export async function GET() {
       LIMIT 50
     `
 
-    console.log('[v0] Client Orders API - found orders:', orders?.length || 0)
-    return NextResponse.json({ orders: orders || [] })
+    return NextResponse.json({ orders: orders || [], success: true })
   } catch (error) {
     console.error('[v0] Client Orders API error:', error instanceof Error ? error.message : error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error', success: false }, { status: 500 })
   }
 }

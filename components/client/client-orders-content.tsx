@@ -63,7 +63,9 @@ export function ClientOrdersContent() {
   const fetchOrders = async () => {
     try {
       console.log('[v0] Fetching client orders...')
-      const response = await fetch('/api/client/orders')
+      const response = await fetch('/api/client/orders', {
+        credentials: 'include',
+      })
 
       if (!response.ok) {
         setError(`Failed to fetch orders: ${response.status}`)
