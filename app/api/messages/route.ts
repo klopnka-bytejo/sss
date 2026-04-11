@@ -4,10 +4,14 @@ import { sql } from '@/lib/neon/server'
 
 export async function GET(request: Request) {
   try {
+    console.log('[v0] Messages API: START')
     const cookieStore = await cookies()
     const userId = cookieStore.get('user_id')?.value
 
+    console.log('[v0] Messages API: userId =', userId)
+
     if (!userId) {
+      console.log('[v0] Messages API: No userId - returning 401')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -16,12 +20,28 @@ export async function GET(request: Request) {
 
     // If conversationId provided, fetch specific conversation messages
     if (conversationId) {
+      console.log('[v0] Messages API: Fetching messages for conversation:', conversationId)
+      
+      // First verify user is part of this conversation
+      const conversationCheck = await sql`
+        SELECT id FROM conversations 
+        WHERE id = ${conversationId} AND (participant_1_id = ${userId} OR participant_2_id = ${userId})
+      `
+
+      if (!conversationCheck || conversationCheck.length === 0) {
+        console.log('[v0] Messages API: User not part of this conversation')
+        return NextResponse.json({ error: 'Unauthorized access to conversation' }, { status: 403 })
+      }
+
       const messages = await sql`
         SELECT 
           m.id,
           m.conversation_id,
           m.sender_id,
+          m.recipient_id,
           m.content,
+          m.is_read,
+          m.read_at,
           m.created_at,
           p.display_name as sender_name,
           p.avatar_url as sender_avatar
@@ -32,88 +52,127 @@ export async function GET(request: Request) {
         LIMIT 100
       `
 
-      console.log('[v0] Messages API - found messages:', messages?.length || 0)
+      console.log('[v0] Messages API: Found', messages?.length || 0, 'messages')
+      
+      // Mark messages as read if they were sent to current user
+      if (messages && messages.length > 0) {
+        console.log('[v0] Messages API: Marking messages as read for user:', userId)
+        await sql`
+          UPDATE messages 
+          SET is_read = true, read_at = NOW()
+          WHERE conversation_id = ${conversationId} 
+            AND recipient_id = ${userId} 
+            AND is_read = false
+        `
+      }
+
       return NextResponse.json({ messages: messages || [] })
     }
 
-    // Otherwise fetch all conversations for user
+    // Otherwise fetch all conversations for user using correct column names
+    console.log('[v0] Messages API: Fetching all conversations for user:', userId)
     const conversations = await sql`
       SELECT 
         c.id,
-        c.order_id,
-        c.client_id,
-        c.pro_id,
+        c.participant_1_id,
+        c.participant_2_id,
         c.last_message_at,
         c.created_at,
-        o.order_number,
-        s.title as service_title,
         CASE 
-          WHEN c.client_id = ${userId} THEN pc.display_name
-          ELSE pp.display_name
+          WHEN c.participant_1_id = ${userId} THEN p2.display_name
+          ELSE p1.display_name
         END as other_user_name,
         CASE 
-          WHEN c.client_id = ${userId} THEN pc.avatar_url
-          ELSE pp.avatar_url
+          WHEN c.participant_1_id = ${userId} THEN p2.avatar_url
+          ELSE p1.avatar_url
         END as other_user_avatar,
-        (SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message
+        CASE 
+          WHEN c.participant_1_id = ${userId} THEN c.participant_2_id
+          ELSE c.participant_1_id
+        END as other_user_id,
+        (SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message,
+        (SELECT COUNT(*)::int FROM messages WHERE conversation_id = c.id AND recipient_id = ${userId} AND is_read = false) as unread_count
       FROM conversations c
-      LEFT JOIN orders o ON c.order_id = o.id
-      LEFT JOIN services s ON o.service_id = s.id
-      LEFT JOIN profiles pc ON c.pro_id = pc.id
-      LEFT JOIN profiles pp ON c.client_id = pp.id
-      WHERE c.client_id = ${userId} OR c.pro_id = ${userId}
+      LEFT JOIN profiles p1 ON c.participant_1_id = p1.id
+      LEFT JOIN profiles p2 ON c.participant_2_id = p2.id
+      WHERE c.participant_1_id = ${userId} OR c.participant_2_id = ${userId}
       ORDER BY c.last_message_at DESC NULLS LAST
       LIMIT 50
     `
 
-    console.log('[v0] Conversations API - found conversations:', conversations?.length || 0)
+    console.log('[v0] Messages API: Found', conversations?.length || 0, 'conversations')
     return NextResponse.json({ conversations: conversations || [] })
   } catch (error) {
-    console.error('[v0] Messages API error:', error instanceof Error ? error.message : error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('[v0] Messages API error:', error instanceof Error ? error.message : String(error))
+    if (error instanceof Error) {
+      console.error('[v0] Messages API stack:', error.stack)
+    }
+    return NextResponse.json({ error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
   try {
+    console.log('[v0] Messages POST: START')
     const cookieStore = await cookies()
     const userId = cookieStore.get('user_id')?.value
 
     if (!userId) {
+      console.log('[v0] Messages POST: No userId - returning 401')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { conversationId, content } = await request.json()
+    const body = await request.json()
+    const { conversationId, content } = body
 
-    if (!conversationId || !content) {
+    console.log('[v0] Messages POST: conversationId =', conversationId, 'content length =', content?.length)
+
+    if (!conversationId || !content?.trim()) {
+      console.log('[v0] Messages POST: Missing required fields')
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // Verify user is part of this conversation
+    // Verify user is part of this conversation and get the other participant
     const conversation = await sql`
-      SELECT id FROM conversations 
-      WHERE id = ${conversationId} AND (client_id = ${userId} OR pro_id = ${userId})
+      SELECT 
+        id,
+        participant_1_id,
+        participant_2_id
+      FROM conversations 
+      WHERE id = ${conversationId} AND (participant_1_id = ${userId} OR participant_2_id = ${userId})
     `
 
     if (!conversation || conversation.length === 0) {
+      console.log('[v0] Messages POST: Conversation not found or user not authorized')
       return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
     }
 
+    const conv = conversation[0]
+    const recipientId = conv.participant_1_id === userId ? conv.participant_2_id : conv.participant_1_id
+
+    console.log('[v0] Messages POST: Inserting message from', userId, 'to', recipientId)
+
     // Create message
-    const message = await sql`
+    const newMessage = await sql`
       INSERT INTO messages (
         conversation_id,
         sender_id,
+        recipient_id,
         content,
+        is_read,
         created_at
       ) VALUES (
         ${conversationId},
         ${userId},
-        ${content},
+        ${recipientId},
+        ${content.trim()},
+        false,
         NOW()
       )
       RETURNING *
     `
+
+    console.log('[v0] Messages POST: Message created:', newMessage[0].id)
 
     // Update conversation last_message_at
     await sql`
@@ -122,10 +181,16 @@ export async function POST(request: Request) {
       WHERE id = ${conversationId}
     `
 
-    console.log('[v0] Messages API - sent message:', message[0].id)
-    return NextResponse.json({ message: message[0], success: true })
+    console.log('[v0] Messages POST: SUCCESS')
+    return NextResponse.json({
+      success: true,
+      message: newMessage[0]
+    })
   } catch (error) {
-    console.error('[v0] Messages API error:', error instanceof Error ? error.message : error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('[v0] Messages POST error:', error instanceof Error ? error.message : String(error))
+    if (error instanceof Error) {
+      console.error('[v0] Messages POST stack:', error.stack)
+    }
+    return NextResponse.json({ error: 'Failed to send message', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 })
   }
 }

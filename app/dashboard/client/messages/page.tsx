@@ -82,13 +82,19 @@ export default function ClientMessagesPage() {
 
   const fetchMessages = async (conversationId: string) => {
     try {
-      const res = await fetch(`/api/conversations/${conversationId}/messages`, {
+      console.log('[v0] Messages page: Fetching messages for conversation:', conversationId)
+      const res = await fetch(`/api/messages?conversationId=${conversationId}`, {
         credentials: 'include',
       })
-      const data = await res.json()
-      setMessages(data.messages || [])
+      if (res.ok) {
+        const data = await res.json()
+        console.log('[v0] Messages page: Messages fetched:', data.messages?.length || 0)
+        setMessages(data.messages || [])
+      } else {
+        console.error('[v0] Messages page: Failed to fetch messages, status:', res.status)
+      }
     } catch (error) {
-      console.error('[v0] Failed to fetch messages:', error)
+      console.error('[v0] Messages page: Failed to fetch messages:', error)
     }
   }
 
