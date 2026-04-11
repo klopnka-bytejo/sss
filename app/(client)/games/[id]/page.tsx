@@ -44,12 +44,6 @@ export default function GameDetailsPage() {
     fetchGameAndServices()
   }, [gameSlug])
 
-  useEffect(() => {
-    if (selectedService) {
-      fetchServiceOptions(selectedService.id)
-    }
-  }, [selectedService])
-
   const fetchGameAndServices = async () => {
     try {
       const response = await fetch(`/api/game-services?slug=${gameSlug}`)
