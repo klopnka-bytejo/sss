@@ -21,8 +21,7 @@ import {
   Clock,
   Plus,
   Minus,
-  CheckCircle,
-  ChevronRight
+  CheckCircle
 } from 'lucide-react'
 
 interface Game {
@@ -220,9 +219,9 @@ export default function GamesPage() {
       </header>
 
       {/* Main Content with optional sidebar */}
-      <div className="flex">
+      <div className="flex min-h-screen">
         {/* Games Section */}
-        <div className={`flex-1 transition-all duration-500 ease-out ${selectedGame ? 'lg:mr-[480px]' : ''}`}>
+        <div className={`flex-1 transition-all duration-500 ease-out ${selectedGame ? 'sm:mr-[400px] lg:mr-[440px]' : ''}`}>
           {/* Hero Section */}
           <section className="relative pt-24 pb-12 overflow-hidden">
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -287,20 +286,20 @@ export default function GamesPage() {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {filteredGames.map((game) => (
-                    <Card 
+                    <div 
                       key={game.id} 
                       data-game-card
-                      className={`glass group overflow-hidden cursor-pointer transition-all duration-300 ${
+                      className={`glass group overflow-hidden cursor-pointer transition-all duration-300 rounded-xl ${
                         selectedGame?.id === game.id 
-                          ? 'ring-2 ring-primary scale-[1.02] glow-md' 
-                          : 'glass-hover'
+                          ? 'ring-2 ring-primary scale-[1.02]' 
+                          : 'hover:scale-[1.01] hover:border-border'
                       }`}
                       onClick={() => fetchServicesForGame(game)}
                     >
                       {/* Game Banner/Image */}
-                      <div className="relative h-36 overflow-hidden">
+                      <div className="relative h-24 sm:h-28 overflow-hidden">
                         {game.banner_url ? (
                           <img 
                             src={game.banner_url} 
@@ -309,55 +308,36 @@ export default function GamesPage() {
                           />
                         ) : (
                           <div className="w-full h-full gradient-primary opacity-80 flex items-center justify-center">
-                            <Gamepad2 className="h-12 w-12 text-primary-foreground/80" />
+                            <Gamepad2 className="h-8 w-8 text-primary-foreground/80" />
                           </div>
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
-                        
-                        {/* Logo overlay */}
-                        {game.logo_url && (
-                          <div className="absolute bottom-3 left-3 p-1.5 rounded-lg bg-card/80 backdrop-blur-sm">
-                            <img src={game.logo_url} alt="" className="h-8 w-8 object-contain" />
-                          </div>
-                        )}
 
                         {/* Selected indicator */}
                         {selectedGame?.id === game.id && (
-                          <div className="absolute top-3 right-3 p-1 rounded-full gradient-primary">
-                            <CheckCircle className="h-4 w-4 text-primary-foreground" />
+                          <div className="absolute top-2 right-2 p-0.5 rounded-full gradient-primary">
+                            <CheckCircle className="h-3 w-3 text-primary-foreground" />
                           </div>
                         )}
                       </div>
 
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className="font-semibold text-lg group-hover:text-primary transition-colors line-clamp-1">
-                            {game.name}
-                          </h3>
-                          <div className="flex items-center gap-1 text-warning">
-                            <Star className="h-3.5 w-3.5 fill-current" />
-                            <span className="text-xs font-medium">4.9</span>
-                          </div>
-                        </div>
+                      <div className="p-3">
+                        <h3 className="font-semibold text-sm group-hover:text-primary transition-colors line-clamp-1 mb-1">
+                          {game.name}
+                        </h3>
                         
-                        {game.description && (
-                          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                            {game.description}
-                          </p>
-                        )}
-
-                        <div className="flex items-center justify-between pt-3 border-t border-border/50">
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Users className="h-3.5 w-3.5" />
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                            <Users className="h-3 w-3" />
                             <span>50+ PROs</span>
                           </div>
-                          <div className="flex items-center gap-1 text-primary text-sm font-medium">
-                            View Services
-                            <ChevronRight className="h-4 w-4" />
+                          <div className="flex items-center gap-0.5 text-warning text-[10px]">
+                            <Star className="h-2.5 w-2.5 fill-current" />
+                            <span>4.9</span>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -393,37 +373,37 @@ export default function GamesPage() {
         {/* Services Slide Panel */}
         <div 
           ref={panelRef}
-          className={`fixed top-0 right-0 h-full w-full lg:w-[480px] z-40 transform transition-transform duration-500 ease-out ${
+          className={`fixed top-16 right-0 bottom-0 w-full sm:w-[400px] lg:w-[440px] z-40 transform transition-transform duration-500 ease-out ${
             selectedGame ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
-          <div className="h-full glass border-l border-border/30 flex flex-col">
+          <div className="h-full glass border-l border-border/30 flex flex-col overflow-hidden">
             {/* Panel Header */}
-            <div className="flex-shrink-0 p-6 border-b border-border/30">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 p-4 border-b border-border/30">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 min-w-0">
                   {selectedGame?.logo_url ? (
-                    <div className="p-2 rounded-lg bg-card/80">
-                      <img src={selectedGame.logo_url} alt="" className="h-8 w-8 object-contain" />
+                    <div className="p-1.5 rounded-lg bg-card/80 flex-shrink-0">
+                      <img src={selectedGame.logo_url} alt="" className="h-7 w-7 object-contain" />
                     </div>
                   ) : (
-                    <div className="p-2 rounded-lg gradient-primary">
-                      <Gamepad2 className="h-6 w-6 text-primary-foreground" />
+                    <div className="p-1.5 rounded-lg gradient-primary flex-shrink-0">
+                      <Gamepad2 className="h-5 w-5 text-primary-foreground" />
                     </div>
                   )}
-                  <div>
-                    <h2 className="text-xl font-bold">{selectedGame?.name}</h2>
-                    <p className="text-sm text-muted-foreground">Available Services</p>
+                  <div className="min-w-0">
+                    <h2 className="text-lg font-bold truncate">{selectedGame?.name}</h2>
+                    <p className="text-xs text-muted-foreground">Select a service</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" onClick={closePanel} className="rounded-full">
-                  <X className="h-5 w-5" />
+                <Button variant="ghost" size="icon" onClick={closePanel} className="rounded-full flex-shrink-0 h-8 w-8">
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
             {/* Services List */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-4">
               {loadingServices ? (
                 <div className="flex items-center justify-center py-20">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -435,14 +415,14 @@ export default function GamesPage() {
                   <p className="text-sm text-muted-foreground mt-2">Check back soon!</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {services.map((service) => (
-                    <Card 
+                    <div 
                       key={service.id}
-                      className={`cursor-pointer transition-all duration-200 ${
+                      className={`p-3 rounded-xl cursor-pointer transition-all duration-200 border ${
                         selectedService?.id === service.id 
-                          ? 'ring-2 ring-primary bg-primary/5' 
-                          : 'glass-hover'
+                          ? 'border-primary bg-primary/10' 
+                          : 'border-border/50 hover:border-border hover:bg-secondary/30'
                       }`}
                       onClick={() => {
                         setSelectedService(service)
@@ -450,41 +430,35 @@ export default function GamesPage() {
                         setAddedToCart(false)
                       }}
                     >
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-base">{service.title}</h3>
-                            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                              {service.description}
-                            </p>
-                          </div>
-                          {selectedService?.id === service.id && (
-                            <div className="ml-3">
-                              <CheckCircle className="h-5 w-5 text-primary" />
-                            </div>
-                          )}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-sm truncate">{service.title}</h3>
+                          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                            {service.description}
+                          </p>
                         </div>
-                        
-                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            {service.category && (
-                              <Badge variant="secondary" className="text-xs">
-                                {service.category}
-                              </Badge>
-                            )}
-                            {service.duration_minutes && (
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                <span>{service.duration_minutes} min</span>
-                              </div>
-                            )}
-                          </div>
-                          <span className="font-bold text-lg text-gradient">
-                            {formatPrice(service.price_cents)}
+                        <span className="font-bold text-sm text-primary flex-shrink-0">
+                          {formatPrice(service.price_cents)}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 mt-2">
+                        {service.category && (
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                            {service.category}
+                          </Badge>
+                        )}
+                        {service.duration_minutes && (
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            <Clock className="h-2.5 w-2.5" />
+                            {service.duration_minutes}m
                           </span>
-                        </div>
-                      </CardContent>
-                    </Card>
+                        )}
+                        {selectedService?.id === service.id && (
+                          <CheckCircle className="h-3.5 w-3.5 text-primary ml-auto" />
+                        )}
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -492,36 +466,30 @@ export default function GamesPage() {
 
             {/* Bottom Action Bar */}
             {selectedService && (
-              <div className="flex-shrink-0 p-6 border-t border-border/30 bg-card/80 backdrop-blur-xl">
-                <div className="space-y-4">
-                  {/* Quantity Selector */}
+              <div className="flex-shrink-0 p-4 border-t border-border/30 bg-card/90 backdrop-blur-xl">
+                <div className="space-y-3">
+                  {/* Quantity and Total Row */}
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Quantity</span>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-8 w-8 rounded-full"
+                        className="h-7 w-7 rounded-full"
                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
                       >
-                        <Minus className="h-4 w-4" />
+                        <Minus className="h-3 w-3" />
                       </Button>
-                      <span className="w-8 text-center font-semibold">{quantity}</span>
+                      <span className="w-6 text-center font-semibold text-sm">{quantity}</span>
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-8 w-8 rounded-full"
+                        className="h-7 w-7 rounded-full"
                         onClick={() => setQuantity(quantity + 1)}
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-3 w-3" />
                       </Button>
                     </div>
-                  </div>
-
-                  {/* Total */}
-                  <div className="flex items-center justify-between py-3 border-t border-border/50">
-                    <span className="text-sm text-muted-foreground">Total</span>
-                    <span className="text-2xl font-bold text-gradient">
+                    <span className="text-xl font-bold text-gradient">
                       {formatPrice(selectedService.price_cents * quantity)}
                     </span>
                   </div>
@@ -530,7 +498,7 @@ export default function GamesPage() {
                   <Button 
                     onClick={addToCart}
                     disabled={addedToCart}
-                    className={`w-full h-12 text-base font-semibold transition-all duration-300 ${
+                    className={`w-full h-11 text-sm font-semibold transition-all duration-300 ${
                       addedToCart 
                         ? 'bg-green-600 hover:bg-green-600' 
                         : 'gradient-primary border-0'
@@ -538,12 +506,12 @@ export default function GamesPage() {
                   >
                     {addedToCart ? (
                       <>
-                        <CheckCircle className="mr-2 h-5 w-5" />
+                        <CheckCircle className="mr-2 h-4 w-4" />
                         Added to Cart!
                       </>
                     ) : (
                       <>
-                        <ShoppingCart className="mr-2 h-5 w-5" />
+                        <ShoppingCart className="mr-2 h-4 w-4" />
                         Add to Cart
                       </>
                     )}
@@ -552,9 +520,9 @@ export default function GamesPage() {
                   {/* View Cart Link */}
                   {cartCount > 0 && (
                     <Link href="/cart" className="block">
-                      <Button variant="outline" className="w-full">
-                        View Cart ({cartCount} items)
-                        <ArrowRight className="ml-2 h-4 w-4" />
+                      <Button variant="outline" size="sm" className="w-full">
+                        View Cart ({cartCount})
+                        <ArrowRight className="ml-2 h-3 w-3" />
                       </Button>
                     </Link>
                   )}
