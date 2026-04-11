@@ -7,7 +7,13 @@ export async function POST(request: NextRequest) {
     console.log('[v0] POST /api/become-pro called')
     
     const body = await request.json()
-    console.log('[v0] Request received')
+    console.log('[v0] Request body received:', {
+      fullName: body.fullName ? 'present' : 'missing',
+      email: body.email ? 'present' : 'missing',
+      password: body.password ? 'present' : 'missing',
+      games: body.games?.length || 0,
+      country: body.country || 'missing'
+    })
 
     const { fullName, email, password, discordUsername, gamerTag, games, country, customCountry, yearsOfExperience, bio } = body
 
@@ -25,9 +31,16 @@ export async function POST(request: NextRequest) {
     const passwordHash = Buffer.from(password).toString('base64')
     const gamesJson = JSON.stringify(games)
 
-    console.log('[v0] Inserting into database...')
+    console.log('[v0] Inserting into database with:', {
+      full_name: fullName,
+      email: email,
+      country: finalCountry,
+      games: games.length + ' games',
+      has_discord: !!discordUsername,
+      has_gamer_tag: !!gamerTag
+    })
 
-    // Insert application
+    // Insert application - use NULL for optional fields
     const result = await sql`
       INSERT INTO pro_applications (
         full_name, 
@@ -40,18 +53,20 @@ export async function POST(request: NextRequest) {
         years_of_experience, 
         bio, 
         status, 
-        created_at
+        created_at,
+        updated_at
       ) VALUES (
-        ${fullName}, 
-        ${email}, 
+        ${fullName.trim()}, 
+        ${email.trim()}, 
         ${passwordHash}, 
-        ${discordUsername || ''}, 
-        ${gamerTag || ''},
+        ${discordUsername?.trim() || null}, 
+        ${gamerTag?.trim() || null},
         ${gamesJson}, 
-        ${finalCountry}, 
-        ${yearsOfExperience || ''}, 
-        ${bio || ''},
+        ${finalCountry.trim()}, 
+        ${yearsOfExperience?.trim() || null}, 
+        ${bio?.trim() || null},
         'pending', 
+        NOW(),
         NOW()
       )
       RETURNING id, full_name, email, status, created_at
@@ -66,7 +81,10 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
 
   } catch (error) {
-    console.error('[v0] Error:', error)
+    console.error('[v0] Error:', error instanceof Error ? error.message : String(error))
+    if (error instanceof Error) {
+      console.error('[v0] Stack trace:', error.stack)
+    }
     const message = error instanceof Error ? error.message : 'Server error'
     return NextResponse.json(
       { success: false, message },

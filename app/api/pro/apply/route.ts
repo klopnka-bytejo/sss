@@ -1,137 +1,106 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { sql } from '@/lib/neon/server'
 
 // POST - Submit PRO application
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  try {
+    console.log('[v0] POST /api/pro/apply called - redirecting to /api/become-pro')
+    
+    // Redirect all requests to the new endpoint
+    const body = await request.json()
+    
+    // Convert old field names to new format if needed
+    const newBody = {
+      fullName: body.full_name || body.fullName,
+      email: body.email,
+      password: body.password,
+      discordUsername: body.discord_username || body.discordUsername,
+      gamerTag: body.gamer_tag || body.gamerTag,
+      games: body.games || [],
+      country: body.country,
+      customCountry: body.customCountry,
+      yearsOfExperience: body.experience_years || body.yearsOfExperience,
+      bio: body.bio
+    }
 
-  // Check if user already has a pending application
-  const { data: existing } = await supabase
-    .from('pro_applications')
-    .select('id, status')
-    .eq('user_id', user.id)
-    .in('status', ['pending', 'under_review'])
-    .single()
-
-  if (existing) {
-    return NextResponse.json({ 
-      error: 'You already have a pending application',
-      application_id: existing.id 
-    }, { status: 400 })
-  }
-
-  // Check if user is already a PRO
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (profile?.role === 'pro') {
-    return NextResponse.json({ error: 'You are already a PRO' }, { status: 400 })
-  }
-
-  const body = await request.json()
-  const {
-    full_name,
-    display_name,
-    email,
-    phone,
-    country,
-    timezone,
-    date_of_birth,
-    games,
-    experience_years,
-    experience_hours,
-    achievements,
-    proof_links,
-    gaming_profiles,
-    weekly_availability,
-    delivery_methods,
-    languages,
-    accepted_terms,
-    accepted_pro_policy,
-  } = body
-
-  // Validate required fields
-  if (!full_name || !display_name || !email || !country || !timezone || !games?.length) {
-    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-  }
-
-  if (!accepted_terms || !accepted_pro_policy) {
-    return NextResponse.json({ error: 'You must accept the terms and PRO policy' }, { status: 400 })
-  }
-
-  const { data: application, error } = await supabase
-    .from('pro_applications')
-    .insert({
-      user_id: user.id,
-      full_name,
-      display_name,
-      email,
-      phone,
-      country,
-      timezone,
-      date_of_birth,
-      games,
-      experience_years,
-      experience_hours,
-      achievements,
-      proof_links: proof_links || [],
-      gaming_profiles: gaming_profiles || [],
-      weekly_availability: weekly_availability || {},
-      delivery_methods: delivery_methods || [],
-      languages: languages || [],
-      accepted_terms,
-      accepted_pro_policy,
+    // Call the new endpoint
+    const response = await fetch(new URL('/api/become-pro', request.url).toString(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newBody)
     })
-    .select()
-    .single()
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    const data = await response.json()
+    return NextResponse.json(data, { status: response.status })
+  } catch (error) {
+    console.error('[v0] Error in /api/pro/apply:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to submit application' },
+      { status: 500 }
+    )
   }
-
-  // Log audit
-  await supabase.from('audit_logs').insert({
-    user_id: user.id,
-    action: 'pro_application_submitted',
-    entity_type: 'pro_application',
-    entity_id: application.id,
-    details: { games, country },
-  })
-
-  return NextResponse.json({ 
-    application,
-    message: 'Application submitted successfully. We will review it within 24-48 hours.'
-  })
 }
 
-// GET - Get user's application status
+// GET - Get user's application status (using cookie-based auth)
 export async function GET() {
-  const supabase = await createClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  try {
+    console.log('[v0] GET /api/pro/apply called')
+    
+    const cookieStore = await cookies()
+    const userId = cookieStore.get('user_id')?.value
+
+    if (!userId) {
+      console.log('[v0] GET /api/pro/apply: No userId - returning 401')
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    console.log('[v0] GET /api/pro/apply: Fetching application for user:', userId)
+
+    // Fetch user's latest application from pro_applications table
+    // Note: pro_applications doesn't have user_id column, so we search by email
+    const user = await sql`
+      SELECT email FROM profiles WHERE id = ${userId}
+    `
+
+    if (!user || user.length === 0) {
+      console.log('[v0] GET /api/pro/apply: User not found')
+      return NextResponse.json({ application: null })
+    }
+
+    const userEmail = user[0].email
+
+    const applications = await sql`
+      SELECT 
+        id,
+        full_name,
+        email,
+        discord_username,
+        gamer_tag,
+        games,
+        country,
+        years_of_experience,
+        bio,
+        status,
+        rejection_reason,
+        created_at,
+        updated_at,
+        reviewed_at
+      FROM pro_applications
+      WHERE email = ${userEmail}
+      ORDER BY created_at DESC
+      LIMIT 1
+    `
+
+    console.log('[v0] GET /api/pro/apply: Found application:', applications?.[0]?.id || null)
+
+    return NextResponse.json({ application: applications?.[0] || null })
+  } catch (error) {
+    console.error('[v0] GET /api/pro/apply error:', error instanceof Error ? error.message : String(error))
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to fetch application' },
+      { status: 500 }
+    )
   }
-
-  const { data: application, error } = await supabase
-    .from('pro_applications')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
-
-  if (error && error.code !== 'PGRST116') {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  return NextResponse.json({ application: application || null })
 }
