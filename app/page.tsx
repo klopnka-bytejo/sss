@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { sql } from "@/lib/neon/server"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { 
   Gamepad2, 
@@ -29,23 +28,10 @@ function formatCurrency(cents: number) {
 }
 
 export default async function LandingPage() {
-  let games: any[] = []
-  let services: any[] = []
-
-  try {
-    // Fetch popular services
-    services = await sql`
-      SELECT * FROM services 
-      WHERE active = true 
-      ORDER BY created_at DESC 
-      LIMIT 6
-    `
-  } catch (error) {
-    console.error('Database error:', error)
-  }
-
+  // Removed database queries - will fetch data client-side if needed
+  
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background"
       <ThemeToggle />
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/30">
@@ -139,47 +125,7 @@ export default async function LandingPage() {
       </section>
 
       {/* Games Section */}
-      {games && games.length > 0 && (
-        <section className="py-12 border-y border-border/30 bg-card/30">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold">Browse by Game</h2>
-              <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground" asChild>
-                <Link href="/games">
-                  View all
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-              {games?.map((game) => (
-                <Link
-                  key={game.id}
-                  href={`/games/${game.slug}`}
-                  className="group flex flex-col items-center gap-2 p-3 rounded-xl bg-card/50 border border-border/30 hover:border-primary/50 hover:bg-card transition-all duration-200"
-                >
-                  <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-secondary">
-                    {game.logo_url ? (
-                      <Image
-                        src={game.logo_url}
-                        alt={game.name}
-                        fill
-                        className="object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Gamepad2 className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
-                  <span className="text-xs font-medium text-center line-clamp-1">{game.name}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      {/* Hidden for now - will fetch client-side */}
 
       {/* Popular Services */}
       <section className="py-16">
@@ -198,7 +144,29 @@ export default async function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {services?.map((service) => (
+            {[
+              {
+                id: "1",
+                title: "Valorant Rank Boosting",
+                description: "Get boosted to your desired rank with our expert players",
+                category: "Boosting",
+                price_cents: 9900
+              },
+              {
+                id: "2",
+                title: "League of Legends Coaching",
+                description: "1-on-1 coaching sessions to improve your gameplay",
+                category: "Coaching",
+                price_cents: 4900
+              },
+              {
+                id: "3",
+                title: "CS2 Competitive Training",
+                description: "Advanced competitive strategies and tactics training",
+                category: "Coaching",
+                price_cents: 7900
+              }
+            ].map((service) => (
               <Link key={service.id} href={`/services/${service.id}`}>
                 <Card className="h-full glass glass-hover group cursor-pointer">
                   <CardContent className="p-5">
@@ -225,7 +193,7 @@ export default async function LandingPage() {
                         <span>1-3 days</span>
                       </div>
                       <div className="text-lg font-bold text-gradient">
-                        {formatCurrency(service.base_price_cents)}
+                        {formatCurrency(service.price_cents)}
                       </div>
                     </div>
                   </CardContent>
