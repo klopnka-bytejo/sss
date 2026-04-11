@@ -70,7 +70,7 @@ export default async function ExplorePage() {
             <Link href="/games" className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
               Games
             </Link>
-            <Link href="/services" className="px-3 py-1.5 text-sm text-foreground font-medium rounded-lg bg-secondary/50">
+            <Link href="/browse-services" className="px-3 py-1.5 text-sm text-foreground font-medium rounded-lg bg-secondary/50">
               Services
             </Link>
             <Link href="/faq" className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">

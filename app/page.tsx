@@ -47,7 +47,7 @@ export default async function LandingPage() {
             <Link href="/games" className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
               Games
             </Link>
-            <Link href="/services" className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
+            <Link href="/browse-services" className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
               Services
             </Link>
             <Link href="/become-pro" className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
@@ -103,19 +103,19 @@ export default async function LandingPage() {
           {/* Quick Categories */}
           <div className="flex flex-wrap justify-center gap-2 mb-12">
             <Button variant="secondary" size="sm" className="gap-2" asChild>
-              <Link href="/services?category=boosting">
+              <Link href="/browse-services?category=boosting">
                 <Trophy className="h-4 w-4" />
                 Rank Boosting
               </Link>
             </Button>
             <Button variant="secondary" size="sm" className="gap-2" asChild>
-              <Link href="/services?category=coaching">
+              <Link href="/browse-services?category=coaching">
                 <Users className="h-4 w-4" />
                 Coaching
               </Link>
             </Button>
             <Button variant="secondary" size="sm" className="gap-2" asChild>
-              <Link href="/services?category=account">
+              <Link href="/browse-services?category=account">
                 <Zap className="h-4 w-4" />
                 Account Services
               </Link>
@@ -136,7 +136,7 @@ export default async function LandingPage() {
               <p className="text-muted-foreground text-sm">Most requested services this week</p>
             </div>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/services">
+              <Link href="/browse-services">
                 Browse All
                 <ArrowRight className="h-4 w-4 ml-1" />
               </Link>
@@ -320,7 +320,7 @@ export default async function LandingPage() {
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="/services">Browse Services</Link>
+                <Link href="/browse-services">Browse Services</Link>
               </Button>
             </div>
           </div>
@@ -344,7 +344,7 @@ export default async function LandingPage() {
               <h4 className="font-medium mb-3 text-sm">Services</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li><Link href="/games" className="hover:text-foreground transition-colors">Browse Games</Link></li>
-                <li><Link href="/services" className="hover:text-foreground transition-colors">All Services</Link></li>
+                <li><Link href="/browse-services" className="hover:text-foreground transition-colors">All Services</Link></li>
                 <li><Link href="/become-pro" className="hover:text-foreground transition-colors">Become a PRO</Link></li>
               </ul>
             </div>

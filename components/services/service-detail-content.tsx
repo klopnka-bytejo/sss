@@ -198,7 +198,7 @@ export function ServiceDetailContent({ service, addons, reviews, isLoggedIn }: S
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
       {/* Back Button */}
-      <Link href="/services">
+      <Link href="/browse-services">
         <Button variant="ghost" size="sm">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Services

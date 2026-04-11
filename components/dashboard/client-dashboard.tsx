@@ -66,7 +66,7 @@ export function ClientDashboard({ user }: ClientDashboardProps) {
           </p>
         </div>
         <Button asChild>
-          <Link href="/services">
+          <Link href="/browse-services">
             <ShoppingBag className="mr-2 h-4 w-4" />
             Browse Services
           </Link>
@@ -173,7 +173,7 @@ export function ClientDashboard({ user }: ClientDashboardProps) {
               Browse our services and place your first order
             </p>
             <Button asChild>
-              <Link href="/services">
+              <Link href="/browse-services">
                 <ShoppingBag className="mr-2 h-4 w-4" />
                 Browse Services
               </Link>

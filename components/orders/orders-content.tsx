@@ -79,7 +79,7 @@ export function OrdersContent({ orders, user }: OrdersContentProps) {
           </p>
         </div>
         <Button asChild>
-          <Link href="/services">
+          <Link href="/browse-services">
             <ShoppingBag className="mr-2 h-4 w-4" />
             Browse Services
           </Link>
@@ -186,7 +186,7 @@ export function OrdersContent({ orders, user }: OrdersContentProps) {
             </p>
             {orders.length === 0 ? (
               <Button asChild>
-                <Link href="/services">
+                <Link href="/browse-services">
                   <ShoppingBag className="mr-2 h-4 w-4" />
                   Browse Services
                 </Link>

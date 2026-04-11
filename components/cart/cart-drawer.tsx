@@ -21,7 +21,7 @@ export function CartDrawer() {
       <div className="p-8 text-center">
         <p className="text-muted-foreground mb-4">Your cart is empty</p>
         <Button asChild>
-          <Link href="/services">Continue Shopping</Link>
+          <Link href="/browse-services">Continue Shopping</Link>
         </Button>
       </div>
     )

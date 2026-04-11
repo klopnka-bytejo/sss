@@ -186,7 +186,7 @@ export default function AboutPage() {
               Join Elevate Gaming today and experience the best gaming services marketplace.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/services">
+              <Link href="/browse-services">
                 <Button size="lg" className="w-full sm:w-auto">
                   Browse Services
                 </Button>

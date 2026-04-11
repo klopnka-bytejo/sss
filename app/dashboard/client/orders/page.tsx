@@ -122,7 +122,7 @@ export default function ClientOrdersPage() {
             <CardContent className="pt-12 pb-12 text-center">
               <p className="text-muted-foreground mb-4">No orders found</p>
               <Button asChild>
-                <Link href="/services">Browse Services</Link>
+                <Link href="/browse-services">Browse Services</Link>
               </Button>
             </CardContent>
           </Card>

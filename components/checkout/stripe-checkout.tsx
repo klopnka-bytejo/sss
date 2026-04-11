@@ -63,7 +63,7 @@ export default function ServiceCheckout({
               <Link href={`/orders`}>View My Orders</Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/services">Browse More Services</Link>
+              <Link href="/browse-services">Browse More Services</Link>
             </Button>
           </div>
         </CardContent>

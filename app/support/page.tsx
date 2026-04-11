@@ -82,7 +82,7 @@ export default function SupportPage() {
             <Link href="/faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               FAQ
             </Link>
-            <Link href="/services" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <Link href="/browse-services" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Services
             </Link>
           </nav>
