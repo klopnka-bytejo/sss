@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { sql } from '@/lib/neon/server'
+import { neon } from '@neondatabase/serverless'
+
+const sql = neon(process.env.DATABASE_URL_UNPOOLED!)
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,7 +33,7 @@ export async function POST(request: NextRequest) {
     const passwordHash = Buffer.from(password).toString('base64')
     const gamesJson = JSON.stringify(games)
     
-    // Pre-process optional fields - use empty string instead of null since columns are NOT NULL
+    // Pre-process optional fields
     const discordUsernameValue = discordUsername?.trim() || ''
     const gamerTagValue = gamerTag?.trim() || ''
     const yearsOfExperienceValue = yearsOfExperience?.trim() || ''
@@ -41,44 +43,44 @@ export async function POST(request: NextRequest) {
       full_name: fullName.trim(),
       email: email.trim(),
       country: finalCountry.trim(),
-      games: games.length + ' games',
-      discord_username: discordUsernameValue,
-      gamer_tag: gamerTagValue,
-      years_of_experience: yearsOfExperienceValue,
-      bio: bioValue
+      games: games.length + ' games'
     })
 
-    // Insert application with quoted column names
-    const result = await sql`
+    // Insert application - using raw query method
+    const queryText = `
       INSERT INTO pro_applications (
-        "full_name", 
-        "email", 
-        "password_hash", 
-        "discord_username", 
-        "gamer_tag",
-        "games", 
-        "country", 
-        "years_of_experience", 
-        "bio", 
-        "status", 
-        "created_at",
-        "updated_at"
+        full_name, 
+        email, 
+        password_hash, 
+        discord_username, 
+        gamer_tag,
+        games, 
+        country, 
+        years_of_experience, 
+        bio, 
+        status, 
+        created_at,
+        updated_at
       ) VALUES (
-        ${fullName.trim()}, 
-        ${email.trim()}, 
-        ${passwordHash}, 
-        ${discordUsernameValue}, 
-        ${gamerTagValue},
-        ${gamesJson}, 
-        ${finalCountry.trim()}, 
-        ${yearsOfExperienceValue}, 
-        ${bioValue},
-        'pending', 
-        NOW(),
-        NOW()
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW()
       )
-      RETURNING id, "full_name", email, status, created_at
+      RETURNING id, full_name, email, status, created_at
     `
+
+    const values = [
+      fullName.trim(),
+      email.trim(),
+      passwordHash,
+      discordUsernameValue,
+      gamerTagValue,
+      gamesJson,
+      finalCountry.trim(),
+      yearsOfExperienceValue,
+      bioValue,
+      'pending'
+    ]
+
+    const result = await sql(queryText, values)
 
     console.log('[v0] Application created successfully:', result[0]?.id)
 
