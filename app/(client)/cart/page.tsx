@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { toast } from 'sonner'
 import { 
   ShoppingCart, 
   Trash2, 
@@ -14,7 +16,8 @@ import {
   Plus,
   Minus,
   ShoppingBag,
-  Sparkles
+  Sparkles,
+  LogIn
 } from 'lucide-react'
 
 interface CartItem {
@@ -28,13 +31,42 @@ interface CartItem {
 }
 
 export default function CartPage() {
+  const router = useRouter()
   const [items, setItems] = useState<CartItem[]>([])
   const [mounted, setMounted] = useState(false)
+  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
     setMounted(true)
     loadCart()
+    checkAuth()
   }, [])
+
+  const checkAuth = async () => {
+    try {
+      const res = await fetch('/api/auth/me')
+      const data = await res.json()
+      setUser(data.user)
+    } catch {
+      setUser(null)
+    }
+  }
+
+  const handleCheckout = () => {
+    if (!user) {
+      toast('Sign in required', {
+        description: 'You need to sign in to complete your checkout.',
+        action: {
+          label: 'Sign In',
+          onClick: () => router.push('/auth/login?redirect=/checkout'),
+        },
+        icon: <LogIn className="h-4 w-4" />,
+        duration: 5000,
+      })
+      return
+    }
+    router.push('/checkout')
+  }
 
   const loadCart = () => {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]')
@@ -303,12 +335,13 @@ export default function CartPage() {
                   </div>
 
                   <div className="mt-6 space-y-3">
-                    <Link href="/checkout" className="block">
-                      <Button className="w-full gradient-primary border-0 h-11">
-                        Proceed to Checkout
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </Link>
+                    <Button
+                      onClick={handleCheckout}
+                      className="w-full gradient-primary border-0 h-11"
+                    >
+                      Proceed to Checkout
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
                     <Link href="/games" className="block">
                       <Button variant="outline" className="w-full">
                         Continue Shopping

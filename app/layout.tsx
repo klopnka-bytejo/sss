@@ -4,6 +4,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { CartProvider } from '@/lib/contexts/cart-context'
 import { ThemeProvider } from '@/components/theme-provider'
+import { Toaster } from 'sonner'
 import './globals.css'
 
 const _inter = Inter({ subsets: ["latin"], variable: '--font-inter' });
@@ -59,6 +60,17 @@ export default function RootLayout({
           <CartProvider>
             {children}
           </CartProvider>
+          <Toaster 
+            position="top-center"
+            toastOptions={{
+              classNames: {
+                toast: 'glass border border-border/50',
+                title: 'font-semibold text-foreground',
+                description: 'text-muted-foreground text-sm',
+                actionButton: 'gradient-primary border-0 text-primary-foreground text-xs font-semibold px-3 py-1.5 rounded-lg',
+              }
+            }}
+          />
         </ThemeProvider>
         <Analytics />
       </body>
