@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { sql } from '@/lib/neon/server'
 
 export async function GET() {
   try {
@@ -10,16 +11,17 @@ export async function GET() {
       return NextResponse.json({ user: null })
     }
 
-    // If user has a session, they're authenticated
-    // Return a basic user object without querying database
-    return NextResponse.json({ 
-      user: { 
-        id: userId,
-        email: 'admin@example.com',
-        display_name: 'Admin',
-        role: 'admin'
-      } 
-    })
+    // Query database for actual user data
+    const users = await sql`
+      SELECT id, email, display_name, role FROM profiles WHERE id = ${userId}
+    `
+
+    if (!users || users.length === 0) {
+      return NextResponse.json({ user: null })
+    }
+
+    console.log('[v0] Auth ME: User authenticated:', users[0].id, 'Role:', users[0].role)
+    return NextResponse.json({ user: users[0] })
   } catch (error) {
     console.error('[v0] Get user error:', error)
     return NextResponse.json({ user: null })
