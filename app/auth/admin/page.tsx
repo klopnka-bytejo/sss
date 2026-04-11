@@ -31,7 +31,7 @@ export default function AdminLoginPage() {
           }
         }
       } catch (err) {
-        console.log('[v0] Auth admin page: Not authenticated')
+        console.log('[v0] Auth admin page: Not authenticated:', err)
       }
       setIsCheckingAuth(false)
     }
@@ -73,8 +73,8 @@ export default function AdminLoginPage() {
       console.log('[v0] Admin login: Login successful, redirecting to /admin')
       router.push('/admin')
     } catch (err) {
-      console.error('[v0] Admin login: Error:', err)
-      setError('An unexpected error occurred')
+      console.error('[v0] Admin login: Unexpected error:', err instanceof Error ? err.message : err)
+      setError('An unexpected error occurred. Please try again or contact support.')
       setLoading(false)
     }
   }
