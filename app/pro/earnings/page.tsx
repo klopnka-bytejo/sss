@@ -18,7 +18,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { createClient } from "@/lib/supabase/client"
 import { formatCurrency } from "@/lib/utils"
 import { 
   Wallet, 
@@ -37,7 +36,7 @@ import {
 interface Withdrawal {
   id: string
   amount_cents: number
-  method: string
+  method?: string
   status: string
   created_at: string
   processed_at: string | null
@@ -57,6 +56,7 @@ export default function ProEarningsPage() {
   const [balance, setBalance] = useState(0)
   const [pendingBalance, setPendingBalance] = useState(0)
   const [totalEarnings, setTotalEarnings] = useState(0)
+  const [totalWithdrawn, setTotalWithdrawn] = useState(0)
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
   
@@ -72,60 +72,29 @@ export default function ProEarningsPage() {
   }, [])
 
   const loadData = async () => {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) return
+    try {
+      const response = await fetch('/api/pro/earnings', {
+        credentials: 'include',
+      })
+      
+      if (!response.ok) {
+        console.error('[v0] Failed to fetch earnings')
+        setLoading(false)
+        return
+      }
 
-    // Get profile with wallet balance
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("wallet_balance")
-      .eq("id", user.id)
-      .single()
-
-    setBalance(profile?.wallet_balance || 0)
-
-    // Get pending earnings (orders completed but not released)
-    const { data: pendingOrders } = await supabase
-      .from("orders")
-      .select("pro_payout_cents")
-      .eq("pro_id", user.id)
-      .eq("status", "pending_review")
-
-    const pending = pendingOrders?.reduce((sum, o) => sum + (o.pro_payout_cents || 0), 0) || 0
-    setPendingBalance(pending)
-
-    // Get total earnings
-    const { data: completedOrders } = await supabase
-      .from("orders")
-      .select("pro_payout_cents")
-      .eq("pro_id", user.id)
-      .in("status", ["completed", "released"])
-
-    const total = completedOrders?.reduce((sum, o) => sum + (o.pro_payout_cents || 0), 0) || 0
-    setTotalEarnings(total)
-
-    // Get withdrawals
-    const { data: withdrawalsData } = await supabase
-      .from("withdrawals")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(20)
-
-    setWithdrawals(withdrawalsData || [])
-
-    // Get wallet transactions
-    const { data: txData } = await supabase
-      .from("wallet_transactions")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(50)
-
-    setTransactions(txData || [])
-    setLoading(false)
+      const data = await response.json()
+      setBalance(data.balance || 0)
+      setPendingBalance(data.pendingBalance || 0)
+      setTotalEarnings(data.totalEarnings || 0)
+      setTotalWithdrawn(data.totalWithdrawn || 0)
+      setWithdrawals(data.withdrawals || [])
+      setTransactions(data.transactions || [])
+    } catch (error) {
+      console.error('[v0] Error loading earnings:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleWithdraw = async () => {
@@ -154,6 +123,7 @@ export default function ProEarningsPage() {
       const response = await fetch("/api/wallet/withdraw", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify({
           amount_cents: amountCents,
           method: withdrawMethod,
@@ -166,7 +136,12 @@ export default function ProEarningsPage() {
         setWithdrawAmount("")
         setWithdrawDetails("")
         loadData()
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to submit withdrawal request')
       }
+    } catch (error) {
+      alert('Network error. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -184,7 +159,7 @@ export default function ProEarningsPage() {
 
   if (loading) {
     return (
-      <AppLayout>
+      <AppLayout userRole="pro">
         <div className="flex items-center justify-center h-96">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -193,7 +168,7 @@ export default function ProEarningsPage() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout userRole="pro">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -348,13 +323,7 @@ export default function ProEarningsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Withdrawn</p>
-                  <p className="text-2xl font-bold">
-                    {formatCurrency(
-                      withdrawals
-                        .filter(w => w.status === "completed")
-                        .reduce((sum, w) => sum + w.amount_cents, 0)
-                    )}
-                  </p>
+                  <p className="text-2xl font-bold">{formatCurrency(totalWithdrawn)}</p>
                 </div>
                 <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
                   <CheckCircle2 className="h-6 w-6 text-muted-foreground" />
@@ -430,9 +399,10 @@ export default function ProEarningsPage() {
                             {w.method === "paypal" && <CreditCard className="h-5 w-5" />}
                             {w.method === "crypto" && <Bitcoin className="h-5 w-5" />}
                             {w.method === "bank" && <Banknote className="h-5 w-5" />}
+                            {!w.method && <Banknote className="h-5 w-5" />}
                           </div>
                           <div>
-                            <p className="font-medium capitalize">{w.method}</p>
+                            <p className="font-medium capitalize">{w.method || 'Withdrawal'}</p>
                             <p className="text-sm text-muted-foreground">
                               {new Date(w.created_at).toLocaleDateString()}
                             </p>

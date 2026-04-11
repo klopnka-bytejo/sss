@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { AppLayout } from "@/components/app-layout"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Spinner } from "@/components/ui/spinner"
 import {
   Select,
   SelectContent,
@@ -31,23 +31,40 @@ import {
   RefreshCw,
   CheckCircle,
   Filter,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
 import { formatCurrency } from "@/lib/utils"
-import type { Order, Service, Game } from "@/lib/types"
-import { useRouter } from "next/navigation"
+
+interface Order {
+  id: string
+  order_number: string
+  total_cents: number
+  amount_cents: number
+  status: string
+  notes: string | null
+  created_at: string
+  service_id: string
+  service_title: string
+  service_description: string
+  service_game: string
+  service_category: string
+  estimated_hours: string
+}
+
+interface Game {
+  id: string
+  name: string
+}
 
 export default function ProAvailableOrdersPage() {
-  const [orders, setOrders] = useState<(Order & { service?: Service })[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
   const [accepting, setAccepting] = useState<string | null>(null)
   const [selectedGame, setSelectedGame] = useState<string>("all")
   const [confirmOrder, setConfirmOrder] = useState<Order | null>(null)
   const router = useRouter()
-  
-  const supabase = createClient()
 
   useEffect(() => {
     fetchData()
@@ -57,34 +74,35 @@ export default function ProAvailableOrdersPage() {
   }, [])
 
   async function fetchData() {
-    const [ordersRes, gamesRes] = await Promise.all([
-      supabase
-        .from("orders")
-        .select("*, service:services(*)")
-        .eq("status", "paid")
-        .is("pro_id", null)
-        .order("created_at", { ascending: true }),
-      supabase.from("games").select("*").eq("is_active", true).order("sort_order"),
-    ])
-    setOrders(ordersRes.data || [])
-    setGames(gamesRes.data || [])
-    setLoading(false)
+    try {
+      const response = await fetch('/api/pro/available-orders', {
+        credentials: 'include',
+      })
+      
+      if (!response.ok) {
+        console.error('[v0] Failed to fetch available orders')
+        setLoading(false)
+        return
+      }
+
+      const data = await response.json()
+      setOrders(data.orders || [])
+      setGames(data.games || [])
+    } catch (error) {
+      console.error('[v0] Error fetching available orders:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleAcceptOrder(order: Order) {
     setAccepting(order.id)
     
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        alert("Please log in to accept orders")
-        return
-      }
-
-      // Attempt to claim the order (FCFS)
       const res = await fetch("/api/orders/accept", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify({ orderId: order.id }),
       })
 
@@ -101,9 +119,9 @@ export default function ProAvailableOrdersPage() {
       }
 
       // Success - redirect to order details
-      router.push(`/pro/orders/${order.id}`)
+      router.push(`/orders/${order.id}`)
     } catch (error) {
-      console.error("Error accepting order:", error)
+      console.error("[v0] Error accepting order:", error)
       alert("An error occurred. Please try again.")
     } finally {
       setAccepting(null)
@@ -113,15 +131,16 @@ export default function ProAvailableOrdersPage() {
 
   const filteredOrders = selectedGame === "all" 
     ? orders 
-    : orders.filter(o => o.service?.game_id === selectedGame)
+    : orders.filter(o => o.service_game === selectedGame)
 
   const calculatePayout = (order: Order) => {
     // 85% payout (15% platform fee)
-    return Math.round(order.total_cents * 0.85)
+    const total = order.total_cents || order.amount_cents || 0
+    return Math.round(total * 0.85)
   }
 
   return (
-    <AppLayout>
+    <AppLayout userRole="pro">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -147,7 +166,7 @@ export default function ProAvailableOrdersPage() {
                   <li>Orders are first-come, first-served - be quick!</li>
                   <li>Only accept orders you can complete on time</li>
                   <li>Your payout is 85% of the order total</li>
-                  <li>Payouts are released 24 hours after proof submission</li>
+                  <li>Payouts are released 24 hours after client approval</li>
                 </ul>
               </div>
             </div>
@@ -164,7 +183,7 @@ export default function ProAvailableOrdersPage() {
             <SelectContent>
               <SelectItem value="all">All Games</SelectItem>
               {games.map((game) => (
-                <SelectItem key={game.id} value={game.id}>
+                <SelectItem key={game.id} value={game.name}>
                   {game.name}
                 </SelectItem>
               ))}
@@ -178,7 +197,7 @@ export default function ProAvailableOrdersPage() {
         {/* Orders Grid */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Spinner className="h-8 w-8" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : filteredOrders.length === 0 ? (
           <Card>
@@ -198,15 +217,15 @@ export default function ProAvailableOrdersPage() {
                   <div className="flex items-start justify-between">
                     <Badge variant="outline" className="mb-2">
                       <Gamepad2 className="h-3 w-3 mr-1" />
-                      {order.service?.game || "Game"}
+                      {order.service_game || "Game"}
                     </Badge>
                     <Badge variant="secondary">
                       #{order.order_number}
                     </Badge>
                   </div>
-                  <CardTitle className="text-lg">{order.service?.title || "Service"}</CardTitle>
+                  <CardTitle className="text-lg">{order.service_title || "Service"}</CardTitle>
                   <CardDescription className="line-clamp-2">
-                    {order.service?.description || "No description"}
+                    {order.service_description || "No description"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1">
@@ -225,13 +244,13 @@ export default function ProAvailableOrdersPage() {
                         <Clock className="h-4 w-4" />
                         Est. Time
                       </span>
-                      <span>{order.service?.estimated_hours || 24}h</span>
+                      <span>{order.estimated_hours || "24h"}</span>
                     </div>
-                    {order.service?.delivery_type && (
+                    {order.service_category && (
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Delivery</span>
+                        <span className="text-muted-foreground">Category</span>
                         <Badge variant="outline" className="capitalize">
-                          {order.service.delivery_type}
+                          {order.service_category}
                         </Badge>
                       </div>
                     )}
@@ -251,7 +270,7 @@ export default function ProAvailableOrdersPage() {
                   >
                     {accepting === order.id ? (
                       <>
-                        <Spinner className="h-4 w-4 mr-2" />
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         Accepting...
                       </>
                     ) : (
@@ -282,17 +301,17 @@ export default function ProAvailableOrdersPage() {
                 <div className="bg-muted/50 rounded-lg p-3 space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Service:</span>
-                    <span className="font-medium">{confirmOrder?.service?.title}</span>
+                    <span className="font-medium">{confirmOrder?.service_title}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Your Payout:</span>
                     <span className="font-medium text-green-500">
-                      {formatCurrency(calculatePayout(confirmOrder!))}
+                      {confirmOrder && formatCurrency(calculatePayout(confirmOrder))}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Est. Completion:</span>
-                    <span>{confirmOrder?.service?.estimated_hours || 24} hours</span>
+                    <span>{confirmOrder?.estimated_hours || "24 hours"}</span>
                   </div>
                 </div>
                 <p className="text-muted-foreground">

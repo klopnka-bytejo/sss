@@ -6,16 +6,16 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { 
-  Briefcase, 
   Package, 
   Clock, 
   DollarSign, 
   Star,
   TrendingUp,
-  Plus,
   ArrowRight,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  ShoppingBag,
+  Calendar
 } from "lucide-react"
 import type { Profile } from "@/lib/types"
 
@@ -45,15 +45,15 @@ export function ProDashboard({ user }: ProDashboardProps) {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
-            <Link href="/pro/services">
-              <Briefcase className="mr-2 h-4 w-4" />
-              My Services
+            <Link href="/pro/available">
+              <ShoppingBag className="mr-2 h-4 w-4" />
+              Available Orders
             </Link>
           </Button>
           <Button asChild>
-            <Link href="/pro/services/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Service
+            <Link href="/pro/availability">
+              <Calendar className="mr-2 h-4 w-4" />
+              Set Availability
             </Link>
           </Button>
         </div>
@@ -138,20 +138,20 @@ export function ProDashboard({ user }: ProDashboardProps) {
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <AlertCircle className="h-4 w-4" />
-                <span>Add profile details</span>
+                <span>Set your availability</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <AlertCircle className="h-4 w-4" />
-                <span>Add at least one service</span>
+                <span>Accept your first order</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <AlertCircle className="h-4 w-4" />
-                <span>Verify your identity</span>
+                <span>Complete an order</span>
               </div>
             </div>
             <Button className="w-full md:w-auto mt-2" asChild>
-              <Link href="/pro/profile">
-                Complete Profile
+              <Link href="/pro/availability">
+                Set Availability
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
@@ -172,12 +172,12 @@ export function ProDashboard({ user }: ProDashboardProps) {
             <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="font-medium mb-2">No active orders</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Create services to start receiving orders from clients
+              Check available orders to start accepting work from clients
             </p>
             <Button asChild>
-              <Link href="/pro/services/new">
-                <Plus className="mr-2 h-4 w-4" />
-                Create Service
+              <Link href="/pro/available">
+                <ShoppingBag className="mr-2 h-4 w-4" />
+                Browse Available Orders
               </Link>
             </Button>
           </CardContent>

@@ -51,12 +51,11 @@ const clientNavItems = [
   { title: 'Wallet', href: '/wallet', icon: Wallet },
 ]
 
-// PRO navigation
+// PRO navigation (Services removed - only admin can add services)
 const proNavItems = [
   { title: 'Dashboard', href: '/pro/dashboard', icon: LayoutDashboard },
   { title: 'Available Orders', href: '/pro/available', icon: ShoppingBag },
   { title: 'My Orders', href: '/pro/orders', icon: Package },
-  { title: 'My Services', href: '/pro/services', icon: Briefcase },
   { title: 'Availability', href: '/pro/availability', icon: Calendar },
   { title: 'Messages', href: '/pro/messages', icon: MessageSquare },
   { title: 'Earnings', href: '/pro/earnings', icon: DollarSign },

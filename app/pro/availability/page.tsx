@@ -9,8 +9,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { createClient } from "@/lib/supabase/client"
-import { Calendar, Clock, Gamepad2, Monitor, Globe, Save, Loader2 } from "lucide-react"
+import { Calendar, Clock, Gamepad2, Monitor, Globe, Save, Loader2, CheckCircle } from "lucide-react"
 
 const daysOfWeek = [
   { id: "monday", label: "Monday" },
@@ -53,6 +52,7 @@ const regions = [
 export default function ProAvailabilityPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
   const [isAvailable, setIsAvailable] = useState(true)
   const [timezone, setTimezone] = useState("UTC")
   const [availability, setAvailability] = useState<Record<string, { enabled: boolean; start: string; end: string }>>({})
@@ -67,64 +67,65 @@ export default function ProAvailabilityPage() {
   }, [])
 
   const loadData = async () => {
-    const supabase = createClient()
-    
-    // Load games
-    const { data: gamesData } = await supabase
-      .from("games")
-      .select("id, name")
-      .eq("is_active", true)
-      .order("sort_order")
-    
-    setGames(gamesData || [])
-
-    // Load profile settings
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("metadata")
-        .eq("id", user.id)
-        .single()
+    try {
+      const response = await fetch('/api/pro/availability', {
+        credentials: 'include',
+      })
       
-      if (profile?.metadata) {
-        const meta = profile.metadata as Record<string, unknown>
-        setIsAvailable(meta.is_available as boolean ?? true)
-        setTimezone(meta.timezone as string ?? "UTC")
-        setAvailability(meta.availability as Record<string, { enabled: boolean; start: string; end: string }> ?? {})
-        setSelectedMethods(meta.delivery_methods as string[] ?? [])
-        setSelectedPlatforms(meta.platforms as string[] ?? [])
-        setSelectedRegions(meta.regions as string[] ?? [])
-        setSelectedGames(meta.supported_games as string[] ?? [])
+      if (!response.ok) {
+        console.error('[v0] Failed to fetch availability')
+        setLoading(false)
+        return
       }
+
+      const data = await response.json()
+      setGames(data.games || [])
+
+      // Load settings from metadata
+      const meta = data.metadata || {}
+      setIsAvailable(meta.is_available ?? true)
+      setTimezone(meta.timezone ?? "UTC")
+      setAvailability(meta.availability ?? {})
+      setSelectedMethods(meta.delivery_methods ?? [])
+      setSelectedPlatforms(meta.platforms ?? [])
+      setSelectedRegions(meta.regions ?? [])
+      setSelectedGames(meta.supported_games ?? [])
+    } catch (error) {
+      console.error('[v0] Error loading availability:', error)
+    } finally {
+      setLoading(false)
     }
-    
-    setLoading(false)
   }
 
   const handleSave = async () => {
     setSaving(true)
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    setSaved(false)
     
-    if (user) {
-      await supabase
-        .from("profiles")
-        .update({
-          metadata: {
-            is_available: isAvailable,
-            timezone,
-            availability,
-            delivery_methods: selectedMethods,
-            platforms: selectedPlatforms,
-            regions: selectedRegions,
-            supported_games: selectedGames,
-          },
-        })
-        .eq("id", user.id)
+    try {
+      const response = await fetch('/api/pro/availability', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          is_available: isAvailable,
+          timezone,
+          availability,
+          delivery_methods: selectedMethods,
+          platforms: selectedPlatforms,
+          regions: selectedRegions,
+          supported_games: selectedGames,
+        }),
+      })
+
+      if (response.ok) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 3000)
+      }
+    } catch (error) {
+      console.error('[v0] Error saving availability:', error)
+    } finally {
+      setSaving(false)
     }
-    
-    setSaving(false)
   }
 
   const toggleDay = (dayId: string) => {
@@ -159,7 +160,7 @@ export default function ProAvailabilityPage() {
 
   if (loading) {
     return (
-      <AppLayout>
+      <AppLayout userRole="pro">
         <div className="flex items-center justify-center h-96">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -168,7 +169,7 @@ export default function ProAvailabilityPage() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout userRole="pro">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -176,8 +177,14 @@ export default function ProAvailabilityPage() {
             <p className="text-muted-foreground">Configure when you can accept orders</p>
           </div>
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-            Save Changes
+            {saving ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : saved ? (
+              <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            {saved ? 'Saved!' : 'Save Changes'}
           </Button>
         </div>
 
@@ -328,22 +335,26 @@ export default function ProAvailabilityPage() {
             <CardDescription>Select games you can boost/coach</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {games.map((game) => (
-                <div
-                  key={game.id}
-                  onClick={() => toggleArrayItem(selectedGames, setSelectedGames, game.id)}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all text-center ${
-                    selectedGames.includes(game.id)
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:border-primary/50"
-                  }`}
-                >
-                  <Checkbox checked={selectedGames.includes(game.id)} className="mb-2" />
-                  <p className="text-sm font-medium">{game.name}</p>
-                </div>
-              ))}
-            </div>
+            {games.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">No games available yet</p>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {games.map((game) => (
+                  <div
+                    key={game.id}
+                    onClick={() => toggleArrayItem(selectedGames, setSelectedGames, game.id)}
+                    className={`p-3 rounded-lg border cursor-pointer transition-all text-center ${
+                      selectedGames.includes(game.id)
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <Checkbox checked={selectedGames.includes(game.id)} className="mb-2" />
+                    <p className="text-sm font-medium">{game.name}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -407,8 +418,14 @@ export default function ProAvailabilityPage() {
 
         <div className="flex justify-end">
           <Button onClick={handleSave} disabled={saving} size="lg">
-            {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-            Save All Changes
+            {saving ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : saved ? (
+              <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            {saved ? 'Saved!' : 'Save All Changes'}
           </Button>
         </div>
       </div>

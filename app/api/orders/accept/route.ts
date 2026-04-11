@@ -1,23 +1,19 @@
-import { createClient } from "@/lib/supabase/server"
-import { NextResponse } from "next/server"
+import { sql } from '@/lib/neon/server'
+import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const cookieStore = await cookies()
+    const userId = cookieStore.get('user_id')?.value
+    const userRole = cookieStore.get('user_role')?.value
 
-    if (!user) {
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Check if user is a PRO
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single()
-
-    if (!profile || (profile.role !== "pro" && profile.role !== "admin")) {
+    // Check if user is a PRO or admin
+    if (userRole !== "pro" && userRole !== "admin") {
       return NextResponse.json({ error: "Only PROs can accept orders" }, { status: 403 })
     }
 
@@ -28,48 +24,56 @@ export async function POST(request: Request) {
     }
 
     // Get the order
-    const { data: order, error: orderError } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("id", orderId)
-      .single()
+    const orders = await sql`
+      SELECT * FROM orders WHERE id = ${orderId}
+    `
 
-    if (orderError || !order) {
+    if (!orders || orders.length === 0) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 })
     }
 
-    // Check if order can be accepted (must be paid and not already in progress)
+    const order = orders[0]
+
+    // Check if order can be accepted (must be paid and not already assigned)
     if (order.status !== "paid") {
       return NextResponse.json({ error: "Order must be paid to accept" }, { status: 400 })
     }
 
-    // Update order status and assign PRO
-    const { data: updatedOrder, error: updateError } = await supabase
-      .from("orders")
-      .update({
-        status: "in_progress",
-        pro_id: user.id,
-        started_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", orderId)
-      .select()
-      .single()
-
-    if (updateError) {
-      console.error("Error accepting order:", updateError)
-      return NextResponse.json({ error: "Failed to accept order" }, { status: 500 })
+    if (order.pro_id) {
+      return NextResponse.json({ error: "Order already taken" }, { status: 409 })
     }
 
+    // Update order status and assign PRO (atomic operation to prevent race conditions)
+    const result = await sql`
+      UPDATE orders
+      SET 
+        status = 'in_progress',
+        pro_id = ${userId},
+        started_at = NOW(),
+        updated_at = NOW()
+      WHERE id = ${orderId}
+      AND pro_id IS NULL
+      AND status = 'paid'
+      RETURNING *
+    `
+
+    if (!result || result.length === 0) {
+      return NextResponse.json({ error: "Order already taken" }, { status: 409 })
+    }
+
+    const updatedOrder = result[0]
+
+    // Get PRO profile for username
+    const profiles = await sql`
+      SELECT username FROM profiles WHERE id = ${userId}
+    `
+    const proUsername = profiles[0]?.username || 'PRO'
+
     // Add system message to order
-    await supabase
-      .from("order_messages")
-      .insert({
-        order_id: orderId,
-        sender_id: user.id,
-        message: `Order accepted by ${profile.username || 'PRO'}. Work will begin shortly.`,
-        is_system: true,
-      })
+    await sql`
+      INSERT INTO order_messages (order_id, sender_id, message, is_system)
+      VALUES (${orderId}, ${userId}, ${'Order accepted by ' + proUsername + '. Work will begin shortly.'}, true)
+    `
 
     return NextResponse.json({ 
       success: true, 
@@ -77,7 +81,7 @@ export async function POST(request: Request) {
       message: "Order accepted successfully" 
     })
   } catch (error) {
-    console.error("Error in accept order API:", error)
+    console.error("[v0] Error in accept order API:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

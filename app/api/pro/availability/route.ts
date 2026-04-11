@@ -1,70 +1,70 @@
-import { createClient } from "@/lib/supabase/server"
-import { NextRequest, NextResponse } from "next/server"
+import { sql } from '@/lib/neon/server'
+import { cookies } from 'next/headers'
+import { NextRequest, NextResponse } from 'next/server'
 
 // GET /api/pro/availability - Get PRO's availability settings
 export async function GET() {
   try {
-    const supabase = await createClient()
-    
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const cookieStore = await cookies()
+    const userId = cookieStore.get('user_id')?.value
+    const userRole = cookieStore.get('user_role')?.value
+
+    if (!userId || userRole !== 'pro') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role, availability_settings")
-      .eq("id", user.id)
-      .single()
+    // Get profile with availability settings and metadata
+    const profiles = await sql`
+      SELECT metadata, availability_settings
+      FROM profiles
+      WHERE id = ${userId}
+    `
+    const profile = profiles[0] || {}
 
-    if (profile?.role !== "pro") {
-      return NextResponse.json({ error: "PRO access required" }, { status: 403 })
-    }
+    // Get active games
+    const games = await sql`
+      SELECT id, name
+      FROM games
+      WHERE is_active = true
+      ORDER BY name
+    `
 
-    return NextResponse.json({ settings: profile.availability_settings || {} })
+    return NextResponse.json({
+      settings: profile.availability_settings || {},
+      metadata: profile.metadata || {},
+      games: games || [],
+    })
   } catch (error) {
-    console.error("PRO availability error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error('[v0] PRO availability error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
 // PUT /api/pro/availability - Update PRO's availability settings
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const cookieStore = await cookies()
+    const userId = cookieStore.get('user_id')?.value
+    const userRole = cookieStore.get('user_role')?.value
+
+    if (!userId || userRole !== 'pro') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single()
+    const body = await request.json()
 
-    if (profile?.role !== "pro") {
-      return NextResponse.json({ error: "PRO access required" }, { status: 403 })
-    }
-
-    const settings = await request.json()
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({ 
-        availability_settings: settings,
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", user.id)
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+    // Update profile with availability settings stored in metadata
+    await sql`
+      UPDATE profiles
+      SET 
+        metadata = ${JSON.stringify(body)}::jsonb,
+        updated_at = NOW()
+      WHERE id = ${userId}
+    `
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("PRO availability update error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error('[v0] PRO availability update error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
