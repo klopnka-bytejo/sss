@@ -29,16 +29,17 @@ const COUNTRIES = [
 ]
 
 type FormData = {
-  fullName: string
-  email: string
+  fullName: string          // Maps to database: display_name
+  email: string             // Maps to database: email
+  discordUsername: string   // Maps to database: discord
+  games: string[]           // Maps to database: games (jsonb)
+  yearsOfExperience: string // Maps to database: experience
+  bio: string               // Maps to database: achievements
+  // Unused fields kept for form compatibility
   password: string
-  discordUsername: string
   gamerTag: string
-  games: string[]
   country: string
   customCountry: string
-  yearsOfExperience: string
-  bio: string
 }
 
 export default function BecomeProPage() {
@@ -76,12 +77,11 @@ export default function BecomeProPage() {
   }
 
   const validateForm = () => {
-    if (!formData.fullName.trim()) return 'Full name is required'
+    // Only validate fields that exist in the database:
+    // display_name (required), email (required), games (optional), discord (optional), experience (optional), achievements (optional)
+    if (!formData.fullName.trim()) return 'Display name is required'
     if (!formData.email.includes('@')) return 'Valid email is required'
-    if (!formData.password || formData.password.length < 8) return 'Password must be at least 8 characters'
     if (formData.games.length === 0) return 'Select at least one game'
-    if (!formData.country) return 'Country/Region is required'
-    if (formData.country === 'Other' && !formData.customCountry.trim()) return 'Please specify your country'
     return null
   }
 
@@ -248,20 +248,6 @@ export default function BecomeProPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="password">Password *</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Minimum 8 characters"
-                    value={formData.password}
-                    onChange={(e) => handleInputChange('password', e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    This will be your login password once your application is approved
-                  </p>
-                </div>
-
-                <div>
                   <Label htmlFor="discord">Discord Username *</Label>
                   <Input
                     id="discord"
@@ -273,17 +259,7 @@ export default function BecomeProPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="gamerTag">Game Username / Gamer Tag *</Label>
-                  <Input
-                    id="gamerTag"
-                    placeholder="Your in-game username"
-                    value={formData.gamerTag}
-                    onChange={(e) => handleInputChange('gamerTag', e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="country">Country / Region *</Label>
+                  <Label htmlFor="country">Country / Region</Label>
                   <Select 
                     value={formData.country} 
                     onValueChange={(value) => {

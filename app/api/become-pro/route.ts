@@ -3,16 +3,18 @@ import type { NextRequest } from 'next/server'
 import { sql } from '@/lib/neon/server'
 import { cookies } from 'next/headers'
 
-// Schema validation helper
+// Schema validation helper - matches ACTUAL database columns
 function validateProApplication(data: any) {
   const errors: Record<string, string> = {}
   
-  if (!data.fullName?.trim()) errors.fullName = 'Full name is required'
+  // display_name is required in database (NOT NULL)
+  if (!data.fullName?.trim() && !data.displayName?.trim()) {
+    errors.fullName = 'Display name is required'
+  }
+  // email is required in database (NOT NULL)
   if (!data.email?.trim()) errors.email = 'Email is required'
-  if (!data.password || data.password.length < 8) errors.password = 'Password must be at least 8 characters'
+  // games - optional, defaults to empty array in database
   if (!data.games || data.games.length === 0) errors.games = 'Select at least one game'
-  if (!data.country) errors.country = 'Country/Region is required'
-  if (data.country === 'Other' && !data.customCountry?.trim()) errors.customCountry = 'Please specify your country'
   
   return Object.keys(errors).length === 0 ? null : errors
 }
@@ -32,53 +34,58 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { fullName, email, password, discordUsername, gamerTag, games, country, customCountry, yearsOfExperience, bio, message } = body
+    // Extract fields from request - map frontend names to database columns
+    const { 
+      fullName, 
+      displayName,
+      email, 
+      discordUsername, 
+      discord,
+      games, 
+      yearsOfExperience, 
+      experience,
+      bio,
+      achievements
+    } = body
 
-    const finalCountry = country === 'Other' ? customCountry : country
-    const passwordHash = Buffer.from(password).toString('base64')
-    const gamesJson = JSON.stringify(games)
-    
-    // Pre-process optional fields (use empty strings since columns are NOT NULL)
-    const discordUsernameValue = discordUsername?.trim() || ''
-    const gamerTagValue = gamerTag?.trim() || ''
-    const yearsOfExperienceValue = yearsOfExperience?.trim() || ''
-    const bioValue = bio?.trim() || ''
-    const messageValue = message?.trim() || ''
+    // Map frontend field names to ACTUAL database column names:
+    // Frontend: fullName -> Database: display_name
+    // Frontend: discordUsername -> Database: discord
+    // Frontend: yearsOfExperience -> Database: experience
+    // Frontend: bio -> Database: achievements
+    const displayNameValue = (fullName || displayName || '').trim()
+    const discordValue = (discordUsername || discord || '').trim() || null
+    const experienceValue = (yearsOfExperience || experience || '').trim() || null
+    const achievementsValue = (bio || achievements || '').trim() || null
+    const gamesJson = JSON.stringify(games || [])
 
-    // Insert application using template literal with exact column names from database
+    // Insert application using ACTUAL database column names:
+    // id, user_id, email, display_name, discord, games, experience, achievements, status, admin_notes, reviewed_by, reviewed_at, created_at, updated_at
     const result = await sql`
       INSERT INTO pro_applications (
         user_id,
-        full_name, 
-        email, 
-        password_hash, 
-        discord_username, 
-        gamer_tag,
-        games, 
-        country, 
-        years_of_experience, 
-        bio,
-        message, 
-        status, 
+        email,
+        display_name,
+        discord,
+        games,
+        experience,
+        achievements,
+        status,
         created_at,
         updated_at
       ) VALUES (
         ${userId || null},
-        ${fullName.trim()},
         ${email.trim()},
-        ${passwordHash},
-        ${discordUsernameValue},
-        ${gamerTagValue},
-        ${gamesJson},
-        ${finalCountry.trim()},
-        ${yearsOfExperienceValue},
-        ${bioValue},
-        ${messageValue},
-        ${'pending'},
+        ${displayNameValue},
+        ${discordValue},
+        ${gamesJson}::jsonb,
+        ${experienceValue},
+        ${achievementsValue},
+        'pending',
         NOW(),
         NOW()
       )
-      RETURNING id, full_name, email, status, created_at
+      RETURNING id, display_name, email, status, created_at
     `
 
     if (!result || result.length === 0) {
