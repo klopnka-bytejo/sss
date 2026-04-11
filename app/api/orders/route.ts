@@ -27,24 +27,26 @@ export async function POST(request: NextRequest) {
     // Generate unique order number
     const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
-    // Create order in database
+    // Create order in database using ACTUAL schema columns:
+    // id, order_number, client_id, pro_id, service_id, amount_cents, status, payment_method, stripe_payment_id, created_at, updated_at
+    // Note: pro_id is required, so we use a placeholder UUID that will be replaced when a PRO is assigned
     const result = await sql`
       INSERT INTO orders (
         order_number,
         client_id,
+        pro_id,
         service_id,
         amount_cents,
         status,
-        payment_status,
         created_at,
         updated_at
       ) VALUES (
         ${orderNumber},
         ${userId},
+        '00000000-0000-0000-0000-000000000000',
         ${items[0].serviceId},
         ${totalAmountCents},
         'pending_assignment',
-        'pending',
         NOW(),
         NOW()
       )

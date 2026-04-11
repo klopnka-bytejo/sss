@@ -11,19 +11,25 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // User is authenticated via session cookie - that's enough for admin access
-    // Fetch all orders with complete related data
+    // Verify admin role
+    const adminCheck = await sql`SELECT role FROM profiles WHERE id = ${userId}`
+    if (!adminCheck || adminCheck.length === 0 || adminCheck[0].role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized - Admin access required' }, { status: 403 })
+    }
+
+    // Fetch all orders using ACTUAL schema columns:
+    // id, order_number, client_id, pro_id, service_id, amount_cents, status, payment_method, stripe_payment_id, created_at, updated_at
     const orders = await sql`
       SELECT 
         o.id,
         o.order_number,
+        o.client_id,
+        o.pro_id,
+        o.service_id,
         o.amount_cents,
-        o.platform_fee_cents,
-        o.pro_payout_cents,
         o.status,
-        o.payment_status,
         o.payment_method,
-        o.notes,
+        o.stripe_payment_id,
         o.created_at,
         o.updated_at,
         c.email as client_email,
@@ -31,8 +37,7 @@ export async function GET() {
         p.email as pro_email,
         p.display_name as pro_name,
         s.title as service_title,
-        s.category as service_category,
-        s.price_cents as service_price
+        s.category as service_category
       FROM orders o
       LEFT JOIN profiles c ON o.client_id = c.id
       LEFT JOIN profiles p ON o.pro_id = p.id
@@ -40,8 +45,6 @@ export async function GET() {
       ORDER BY o.created_at DESC
       LIMIT 100
     `
-
-    console.log('[v0] Admin orders API - found orders:', orders?.length || 0)
     return NextResponse.json({ orders: orders || [] })
   } catch (error) {
     console.error('[v0] Admin orders API error:', error instanceof Error ? error.message : error)
@@ -78,7 +81,6 @@ export async function PATCH(request: NextRequest) {
       `
     }
 
-    console.log('[v0] Admin orders API - updated order:', orderId, 'action:', action)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('[v0] Admin orders API error:', error instanceof Error ? error.message : error)
