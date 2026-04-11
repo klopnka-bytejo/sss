@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { neon } from '@neondatabase/serverless'
-
-const sql = neon(process.env.DATABASE_URL_UNPOOLED!)
+import { sql } from '@/lib/neon/server'
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,7 +44,7 @@ export async function POST(request: NextRequest) {
       games: games.length + ' games'
     })
 
-    // Insert application - using raw query method
+    // Insert application - using parameterized query with $1, $2, etc
     const queryText = `
       INSERT INTO pro_applications (
         full_name, 
@@ -80,6 +78,7 @@ export async function POST(request: NextRequest) {
       'pending'
     ]
 
+    console.log('[v0] Executing SQL query with', values.length, 'parameters')
     const result = await sql(queryText, values)
 
     console.log('[v0] Application created successfully:', result[0]?.id)
