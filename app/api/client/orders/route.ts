@@ -12,8 +12,9 @@ export async function GET() {
     }
 
     // Fetch all orders for the client using ACTUAL schema columns
-    // Schema has: id, order_number, client_id, pro_id, service_id, amount_cents, status, payment_method, stripe_payment_id, created_at, updated_at
-    // NO: platform_fee_cents, pro_payout_cents, payment_status, notes
+    // orders: id, order_number, client_id, pro_id, service_id, amount_cents, status, payment_method, stripe_payment_id, created_at, updated_at
+    // pro_profiles: id, user_id, status, bio, expertise, hourly_rate_cents, total_earnings_cents, verified_at, created_at, updated_at
+    // NO rating, NO total_orders in pro_profiles
     const orders = await sql`
       SELECT 
         o.id,
@@ -30,13 +31,10 @@ export async function GET() {
         s.title as service_title,
         s.category as service_category,
         p.display_name as pro_name,
-        p.avatar_url as pro_avatar,
-        pp.rating as pro_rating,
-        pp.total_orders as pro_total_orders
+        p.avatar_url as pro_avatar
       FROM orders o
       LEFT JOIN services s ON o.service_id = s.id
       LEFT JOIN profiles p ON o.pro_id = p.id
-      LEFT JOIN pro_profiles pp ON p.id = pp.user_id
       WHERE o.client_id = ${userId}
       ORDER BY o.created_at DESC
       LIMIT 50
