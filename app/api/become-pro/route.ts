@@ -48,21 +48,21 @@ export async function POST(request: NextRequest) {
       bio: bioValue
     })
 
-    // Insert application
+    // Insert application with quoted column names
     const result = await sql`
       INSERT INTO pro_applications (
-        full_name, 
-        email, 
-        password_hash, 
-        discord_username, 
-        gamer_tag,
-        games, 
-        country, 
-        years_of_experience, 
-        bio, 
-        status, 
-        created_at,
-        updated_at
+        "full_name", 
+        "email", 
+        "password_hash", 
+        "discord_username", 
+        "gamer_tag",
+        "games", 
+        "country", 
+        "years_of_experience", 
+        "bio", 
+        "status", 
+        "created_at",
+        "updated_at"
       ) VALUES (
         ${fullName.trim()}, 
         ${email.trim()}, 
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
         NOW(),
         NOW()
       )
-      RETURNING id, full_name, email, status, created_at
+      RETURNING id, "full_name", email, status, created_at
     `
 
     console.log('[v0] Application created successfully:', result[0]?.id)
