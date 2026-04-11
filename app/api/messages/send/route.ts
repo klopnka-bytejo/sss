@@ -63,26 +63,22 @@ export async function POST(request: NextRequest) {
       conversationId = newConvResult[0].id
     }
 
-    // Create message using template literal with correct column names
+    // Create message using ACTUAL schema columns
+    // Schema has: id, conversation_id, sender_id, content, read, created_at
+    // NO recipient_id, NO is_read, NO updated_at
     const messageResult = await sql`
       INSERT INTO messages (
         conversation_id,
         sender_id,
-        recipient_id,
         content,
-        is_read,
-        created_at,
-        updated_at
+        read
       ) VALUES (
         ${conversationId},
         ${userId},
-        ${recipientId},
         ${content.trim()},
-        false,
-        NOW(),
-        NOW()
+        false
       )
-      RETURNING id, conversation_id, sender_id, recipient_id, content, created_at
+      RETURNING id, conversation_id, sender_id, content, read, created_at
     `
 
     if (!messageResult || messageResult.length === 0) {
