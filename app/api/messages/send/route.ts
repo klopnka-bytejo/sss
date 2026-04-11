@@ -34,22 +34,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if recipient exists
-    const recipientQuery = `SELECT id FROM profiles WHERE id = $1`
-    const recipientResult = await sql.query(recipientQuery, [recipientId])
+    // Check if recipient exists using template literal
+    const recipientResult = await sql`SELECT id FROM profiles WHERE id = ${recipientId}`
 
     if (!recipientResult || recipientResult.length === 0) {
       return NextResponse.json({ error: 'Recipient not found' }, { status: 404 })
     }
 
-    // Get or create conversation
-    const conversationQuery = `
+    // Get or create conversation using template literal
+    const conversationResult = await sql`
       SELECT id FROM conversations
-      WHERE (participant_1_id = $1 AND participant_2_id = $2)
-         OR (participant_1_id = $2 AND participant_2_id = $1)
+      WHERE (participant_1_id = ${userId} AND participant_2_id = ${recipientId})
+         OR (participant_1_id = ${recipientId} AND participant_2_id = ${userId})
       LIMIT 1
     `
-    const conversationResult = await sql.query(conversationQuery, [userId, recipientId])
 
     let conversationId: string
 
@@ -57,17 +55,16 @@ export async function POST(request: NextRequest) {
       conversationId = conversationResult[0].id
     } else {
       // Create new conversation
-      const createConvQuery = `
+      const newConvResult = await sql`
         INSERT INTO conversations (participant_1_id, participant_2_id, created_at, last_message_at)
-        VALUES ($1, $2, NOW(), NOW())
+        VALUES (${userId}, ${recipientId}, NOW(), NOW())
         RETURNING id
       `
-      const newConvResult = await sql.query(createConvQuery, [userId, recipientId])
       conversationId = newConvResult[0].id
     }
 
-    // Create message with parameterized query
-    const messageQuery = `
+    // Create message using template literal with correct column names
+    const messageResult = await sql`
       INSERT INTO messages (
         conversation_id,
         sender_id,
@@ -77,25 +74,23 @@ export async function POST(request: NextRequest) {
         created_at,
         updated_at
       ) VALUES (
-        $1, $2, $3, $4, $5, NOW(), NOW()
+        ${conversationId},
+        ${userId},
+        ${recipientId},
+        ${content.trim()},
+        false,
+        NOW(),
+        NOW()
       )
       RETURNING id, conversation_id, sender_id, recipient_id, content, created_at
     `
-    const messageResult = await sql.query(messageQuery, [
-      conversationId,
-      userId,
-      recipientId,
-      content.trim(),
-      false
-    ])
 
     if (!messageResult || messageResult.length === 0) {
       return NextResponse.json({ error: 'Failed to create message' }, { status: 500 })
     }
 
     // Update conversation last_message_at
-    const updateConvQuery = `UPDATE conversations SET last_message_at = NOW() WHERE id = $1`
-    await sql.query(updateConvQuery, [conversationId])
+    await sql`UPDATE conversations SET last_message_at = NOW() WHERE id = ${conversationId}`
 
     return NextResponse.json({
       success: true,
@@ -106,7 +101,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: false,
       error: 'Failed to send message',
-      details: message.includes('column') ? `Database: ${message}` : message
+      details: message
     }, { status: 500 })
   }
 }

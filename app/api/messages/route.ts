@@ -4,14 +4,10 @@ import { sql } from '@/lib/neon/server'
 
 export async function GET(request: Request) {
   try {
-    console.log('[v0] Messages API: START')
     const cookieStore = await cookies()
     const userId = cookieStore.get('user_id')?.value
 
-    console.log('[v0] Messages API: userId =', userId)
-
     if (!userId) {
-      console.log('[v0] Messages API: No userId - returning 401')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -20,8 +16,6 @@ export async function GET(request: Request) {
 
     // If conversationId provided, fetch specific conversation messages
     if (conversationId) {
-      console.log('[v0] Messages API: Fetching messages for conversation:', conversationId)
-      
       // First verify user is part of this conversation
       const conversationCheck = await sql`
         SELECT id FROM conversations 
@@ -29,7 +23,6 @@ export async function GET(request: Request) {
       `
 
       if (!conversationCheck || conversationCheck.length === 0) {
-        console.log('[v0] Messages API: User not part of this conversation')
         return NextResponse.json({ error: 'Unauthorized access to conversation' }, { status: 403 })
       }
 
@@ -51,12 +44,9 @@ export async function GET(request: Request) {
         ORDER BY m.created_at ASC
         LIMIT 100
       `
-
-      console.log('[v0] Messages API: Found', messages?.length || 0, 'messages')
       
       // Mark messages as read if they were sent to current user
       if (messages && messages.length > 0) {
-        console.log('[v0] Messages API: Marking messages as read for user:', userId)
         await sql`
           UPDATE messages 
           SET is_read = true, read_at = NOW()
@@ -69,8 +59,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ messages: messages || [] })
     }
 
-    // Otherwise fetch all conversations for user using correct column names
-    console.log('[v0] Messages API: Fetching all conversations for user:', userId)
+    // Otherwise fetch all conversations for user
     const conversations = await sql`
       SELECT 
         c.id,
@@ -100,35 +89,26 @@ export async function GET(request: Request) {
       LIMIT 50
     `
 
-    console.log('[v0] Messages API: Found', conversations?.length || 0, 'conversations')
     return NextResponse.json({ conversations: conversations || [] })
   } catch (error) {
-    console.error('[v0] Messages API error:', error instanceof Error ? error.message : String(error))
-    if (error instanceof Error) {
-      console.error('[v0] Messages API stack:', error.stack)
-    }
-    return NextResponse.json({ error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 })
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: 'Internal server error', details: message }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
   try {
-    console.log('[v0] Messages POST: START')
     const cookieStore = await cookies()
     const userId = cookieStore.get('user_id')?.value
 
     if (!userId) {
-      console.log('[v0] Messages POST: No userId - returning 401')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
     const { conversationId, content } = body
 
-    console.log('[v0] Messages POST: conversationId =', conversationId, 'content length =', content?.length)
-
     if (!conversationId || !content?.trim()) {
-      console.log('[v0] Messages POST: Missing required fields')
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
@@ -143,16 +123,13 @@ export async function POST(request: Request) {
     `
 
     if (!conversation || conversation.length === 0) {
-      console.log('[v0] Messages POST: Conversation not found or user not authorized')
       return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
     }
 
     const conv = conversation[0]
     const recipientId = conv.participant_1_id === userId ? conv.participant_2_id : conv.participant_1_id
 
-    console.log('[v0] Messages POST: Inserting message from', userId, 'to', recipientId)
-
-    // Create message
+    // Create message using template literal with correct column names
     const newMessage = await sql`
       INSERT INTO messages (
         conversation_id,
@@ -160,19 +137,19 @@ export async function POST(request: Request) {
         recipient_id,
         content,
         is_read,
-        created_at
+        created_at,
+        updated_at
       ) VALUES (
         ${conversationId},
         ${userId},
         ${recipientId},
         ${content.trim()},
         false,
+        NOW(),
         NOW()
       )
       RETURNING *
     `
-
-    console.log('[v0] Messages POST: Message created:', newMessage[0].id)
 
     // Update conversation last_message_at
     await sql`
@@ -181,16 +158,12 @@ export async function POST(request: Request) {
       WHERE id = ${conversationId}
     `
 
-    console.log('[v0] Messages POST: SUCCESS')
     return NextResponse.json({
       success: true,
       message: newMessage[0]
     })
   } catch (error) {
-    console.error('[v0] Messages POST error:', error instanceof Error ? error.message : String(error))
-    if (error instanceof Error) {
-      console.error('[v0] Messages POST stack:', error.stack)
-    }
-    return NextResponse.json({ error: 'Failed to send message', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 })
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: 'Failed to send message', details: message }, { status: 500 })
   }
 }

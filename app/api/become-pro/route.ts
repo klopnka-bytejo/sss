@@ -45,8 +45,8 @@ export async function POST(request: NextRequest) {
     const bioValue = bio?.trim() || ''
     const messageValue = message?.trim() || ''
 
-    // Insert application with all required columns
-    const queryText = `
+    // Insert application using template literal with exact column names from database
+    const result = await sql`
       INSERT INTO pro_applications (
         user_id,
         full_name, 
@@ -63,27 +63,23 @@ export async function POST(request: NextRequest) {
         created_at,
         updated_at
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW()
+        ${userId || null},
+        ${fullName.trim()},
+        ${email.trim()},
+        ${passwordHash},
+        ${discordUsernameValue},
+        ${gamerTagValue},
+        ${gamesJson},
+        ${finalCountry.trim()},
+        ${yearsOfExperienceValue},
+        ${bioValue},
+        ${messageValue},
+        ${'pending'},
+        NOW(),
+        NOW()
       )
       RETURNING id, full_name, email, status, created_at
     `
-
-    const values = [
-      userId || null,
-      fullName.trim(),
-      email.trim(),
-      passwordHash,
-      discordUsernameValue,
-      gamerTagValue,
-      gamesJson,
-      finalCountry.trim(),
-      yearsOfExperienceValue,
-      bioValue,
-      messageValue,
-      'pending'
-    ]
-
-    const result = await sql.query(queryText, values)
 
     if (!result || result.length === 0) {
       return NextResponse.json(
@@ -104,7 +100,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         success: false, 
-        message: message.includes('column') ? `Database error: ${message}` : 'Failed to submit application'
+        message: `Failed to submit application: ${message}`
       },
       { status: 500 }
     )
