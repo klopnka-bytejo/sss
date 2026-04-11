@@ -24,15 +24,15 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    // Get messages for this conversation using correct column names
+    // Get messages for this conversation using ACTUAL schema columns
+    // Schema has: id, conversation_id, sender_id, content, read (NOT is_read, NO recipient_id)
     const messages = await sql`
       SELECT 
         m.id,
         m.conversation_id,
         m.sender_id,
-        m.recipient_id,
         m.content,
-        m.is_read,
+        m.read,
         m.created_at,
         p.display_name as sender_name,
         p.role as sender_role
@@ -73,45 +73,36 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { content, recipientId } = body
+    const { content } = body
 
     if (!content?.trim()) {
       return NextResponse.json({ error: 'Message content is required' }, { status: 400 })
     }
 
-    if (!recipientId) {
-      return NextResponse.json({ error: 'Recipient ID is required' }, { status: 400 })
-    }
-
-    // Verify recipient exists
-    const recipientCheck = await sql`
-      SELECT id FROM profiles WHERE id = ${recipientId}
+    // Verify conversation exists
+    const convCheck = await sql`
+      SELECT id FROM conversations WHERE id = ${conversationId}
     `
 
-    if (!recipientCheck || recipientCheck.length === 0) {
-      return NextResponse.json({ error: 'Recipient not found' }, { status: 404 })
+    if (!convCheck || convCheck.length === 0) {
+      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
     }
 
-    // Insert message with correct column names
+    // Insert message using ACTUAL schema columns
+    // Schema has: id, conversation_id, sender_id, content, read (NOT recipient_id, NOT is_read, NOT updated_at)
     const messageResult = await sql`
       INSERT INTO messages (
         conversation_id,
         sender_id,
-        recipient_id,
         content,
-        is_read,
-        created_at,
-        updated_at
+        read
       ) VALUES (
         ${conversationId},
         ${userId},
-        ${recipientId},
         ${content.trim()},
-        false,
-        NOW(),
-        NOW()
+        false
       )
-      RETURNING *
+      RETURNING id, conversation_id, sender_id, content, read, created_at
     `
 
     if (!messageResult || messageResult.length === 0) {
