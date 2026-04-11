@@ -19,18 +19,13 @@ function validateProApplication(data: any) {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('[v0] POST /api/become-pro called')
-    
     const body = await request.json()
     const cookieStore = await cookies()
     const userId = cookieStore.get('user_id')?.value
 
-    console.log('[v0] User ID:', userId ? 'present' : 'missing')
-
     // Validate request body
     const validationErrors = validateProApplication(body)
     if (validationErrors) {
-      console.log('[v0] Validation errors:', validationErrors)
       return NextResponse.json(
         { success: false, errors: validationErrors, message: 'Validation failed' },
         { status: 400 }
@@ -49,8 +44,6 @@ export async function POST(request: NextRequest) {
     const yearsOfExperienceValue = yearsOfExperience?.trim() || ''
     const bioValue = bio?.trim() || ''
     const messageValue = message?.trim() || ''
-
-    console.log('[v0] Inserting pro application')
 
     // Insert application with all required columns
     const queryText = `
@@ -93,14 +86,11 @@ export async function POST(request: NextRequest) {
     const result = await sql.query(queryText, values)
 
     if (!result || result.length === 0) {
-      console.error('[v0] No result returned from INSERT')
       return NextResponse.json(
         { success: false, message: 'Failed to create application' },
         { status: 500 }
       )
     }
-
-    console.log('[v0] Application created successfully:', result[0].id)
 
     return NextResponse.json({
       success: true,
@@ -109,12 +99,6 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
 
   } catch (error) {
-    console.error('[v0] Error:', error instanceof Error ? error.message : String(error))
-    if (error instanceof Error) {
-      console.error('[v0] Stack trace:', error.stack)
-    }
-    
-    // Provide detailed error messages for specific database errors
     const message = error instanceof Error ? error.message : 'Server error'
     
     return NextResponse.json(

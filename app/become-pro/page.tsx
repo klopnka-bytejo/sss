@@ -60,12 +60,10 @@ export default function BecomeProPage() {
   const [success, setSuccess] = useState(false)
 
   const toggleGame = (gameId: string) => {
-    console.log('[v0] Toggling game:', gameId)
     setFormData(prev => {
       const newGames = prev.games.includes(gameId)
         ? prev.games.filter(g => g !== gameId)
         : [...prev.games, gameId]
-      console.log('[v0] Updated games:', newGames)
       return {
         ...prev,
         games: newGames
