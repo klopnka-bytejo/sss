@@ -59,6 +59,7 @@ export default async function LandingPage() {
 
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <div className="w-px h-5 bg-border/50 mx-1 hidden sm:block" />
             <Button variant="ghost" size="sm" asChild>
               <Link href="/auth/login">Sign In</Link>
             </Button>
