@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Loader2, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import { ClientHeader } from '@/components/client-header'
 
 interface Order {
   id: string
@@ -95,7 +96,12 @@ export default function ClientOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-20 pb-12">
+    <div className="min-h-screen bg-background">
+      <ClientHeader
+        title="My Orders"
+        breadcrumbs={[{ label: 'My Orders', href: '/dashboard/client/orders' }]}
+      />
+    <div className="pt-20 pb-12">
       <div className="container mx-auto px-4">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">My Orders</h1>
@@ -171,6 +177,7 @@ export default function ClientOrdersPage() {
           </div>
         )}
       </div>
+    </div>
     </div>
   )
 }

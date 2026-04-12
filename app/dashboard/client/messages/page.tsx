@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { MessageSquare, Send, ArrowLeft, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { ClientHeader } from '@/components/client-header'
 
 interface Conversation {
   id: string
@@ -154,7 +155,12 @@ export default function ClientMessagesPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="min-h-screen bg-background">
+      <ClientHeader
+        title="Messages"
+        breadcrumbs={[{ label: 'Messages', href: '/dashboard/client/messages' }]}
+      />
+    <div className="container mx-auto p-6 pt-20 max-w-7xl">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Messages</h1>
         <p className="text-muted-foreground">Communicate with PROs and support</p>
@@ -301,6 +307,7 @@ export default function ClientMessagesPage() {
           )}
         </Card>
       </div>
+    </div>
     </div>
   )
 }

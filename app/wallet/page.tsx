@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
 import { sql } from "@/lib/neon/server"
-import { AppLayout } from "@/components/app-layout"
+import { ClientHeader } from "@/components/client-header"
 import { WalletContent } from "@/components/wallet/wallet-content"
 import type { Profile, UserRole } from "@/lib/types"
 
@@ -63,13 +63,15 @@ export default async function WalletPage() {
     }
 
     return (
-      <AppLayout 
-        breadcrumbs={[{ label: "Wallet" }]} 
-        userRole={userProfile.role}
-        user={userProfile}
-      >
-        <WalletContent user={userProfile} transactions={transactions} />
-      </AppLayout>
+      <div className="min-h-screen bg-background">
+        <ClientHeader
+          title="Wallet"
+          breadcrumbs={[{ label: 'Wallet', href: '/wallet' }]}
+        />
+        <div className="container mx-auto px-4 py-8 pt-20">
+          <WalletContent user={userProfile} transactions={transactions} />
+        </div>
+      </div>
     )
   } catch (error) {
     console.error('[v0] Wallet page error loading profile:', error instanceof Error ? error.message : error)

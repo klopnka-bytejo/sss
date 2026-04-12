@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { AppLayout } from '@/components/app-layout'
+import { ClientHeader } from '@/components/client-header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -80,8 +80,12 @@ export default function ClientDashboardPage() {
   }
 
   return (
-    <AppLayout userRole="client">
-      <div className="space-y-6">
+    <div className="min-h-screen bg-background">
+      <ClientHeader
+        title="Dashboard"
+        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard/client' }]}
+      />
+      <div className="container mx-auto px-4 py-8 pt-20 space-y-6">
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
           <Card>
@@ -196,6 +200,6 @@ export default function ClientDashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
+    </div>
   )
 }

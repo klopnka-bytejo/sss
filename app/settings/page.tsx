@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { AppLayout } from "@/components/app-layout"
+import { ClientHeader } from "@/components/client-header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,7 +10,6 @@ import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { createClient } from "@/lib/supabase/client"
 import { 
   User, 
   Shield, 
@@ -53,80 +52,56 @@ export default function SettingsPage() {
   }, [])
 
   const loadProfile = async () => {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (user) {
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single()
-
-      if (profileData) {
-        setProfile(profileData)
-        setDisplayName(profileData.display_name || "")
-        setEmail(user.email || "")
-        
-        // Load settings from metadata
-        const meta = profileData.metadata as Record<string, unknown> || {}
-        setEmailNotifications(meta.email_notifications as boolean ?? true)
-        setOrderUpdates(meta.order_updates as boolean ?? true)
-        setMarketingEmails(meta.marketing_emails as boolean ?? false)
-        setProfileVisible(meta.profile_visible as boolean ?? true)
-        setShowActivity(meta.show_activity as boolean ?? true)
+    try {
+      const res = await fetch('/api/auth/me')
+      const data = await res.json()
+      if (data.user) {
+        setProfile(data.user)
+        setDisplayName(data.user.display_name || "")
+        setEmail(data.user.email || "")
       }
+    } catch (error) {
+      console.error('[v0] Settings: Error loading profile:', error)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const handleSaveProfile = async () => {
     if (!profile) return
-    
     setSaving(true)
-    const supabase = createClient()
-    
-    await supabase
-      .from("profiles")
-      .update({
-        display_name: displayName,
-        metadata: {
-          email_notifications: emailNotifications,
-          order_updates: orderUpdates,
-          marketing_emails: marketingEmails,
-          profile_visible: profileVisible,
-          show_activity: showActivity,
-        },
+    try {
+      await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ display_name: displayName }),
       })
-      .eq("id", profile.id)
-    
-    setSaving(false)
+    } catch (error) {
+      console.error('[v0] Settings: Error saving profile:', error)
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const handleChangePassword = async () => {
-    const supabase = createClient()
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
-    })
-    
-    if (!error) {
-      alert("Password reset email sent!")
-    }
+  const handleChangePassword = () => {
+    alert("Please contact support to change your password.")
   }
 
   if (loading) {
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center h-96">
+      <div className="min-h-screen bg-background">
+        <ClientHeader title="Settings" breadcrumbs={[{ label: 'Settings', href: '/settings' }]} />
+        <div className="flex items-center justify-center h-96 pt-16">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </AppLayout>
+      </div>
     )
   }
 
   return (
-    <AppLayout>
-      <div className="space-y-6 max-w-4xl">
+    <div className="min-h-screen bg-background">
+      <ClientHeader title="Settings" breadcrumbs={[{ label: 'Settings', href: '/settings' }]} />
+      <div className="container mx-auto px-4 py-8 pt-20 space-y-6 max-w-4xl">
         <div>
           <h1 className="text-2xl font-bold">Settings</h1>
           <p className="text-muted-foreground">Manage your account settings and preferences</p>
@@ -415,6 +390,6 @@ export default function SettingsPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </AppLayout>
+    </div>
   )
 }
