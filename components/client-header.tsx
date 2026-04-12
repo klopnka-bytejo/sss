@@ -20,7 +20,6 @@ interface UserProfile {
   id: string
   email: string
   display_name: string | null
-  username?: string | null
   avatar_url?: string | null
   balance_cents?: number
   role: string
@@ -72,7 +71,7 @@ export function ClientHeader({ title, breadcrumbs }: ClientHeaderProps) {
     return name.slice(0, 2).toUpperCase()
   }
 
-  const displayName = profile?.display_name || profile?.username || 'User'
+  const displayName = profile?.display_name || 'User'
 
   const formatBalance = (cents: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100)

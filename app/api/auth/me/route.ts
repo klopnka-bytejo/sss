@@ -13,7 +13,7 @@ export async function GET() {
 
     // Query database for full user profile data
     const users = await sql`
-      SELECT id, email, display_name, username, avatar_url, balance_cents, role 
+      SELECT id, email, display_name, avatar_url, balance_cents, role 
       FROM profiles 
       WHERE id = ${userId}
     `
