@@ -182,7 +182,7 @@ export default function RefundPolicyPage() {
                   If you have any questions, feel free to contact us.
                 </p>
                 <Button asChild>
-                  <Link href="/contact">Contact Us</Link>
+                  <Link href="/support">Contact Support</Link>
                 </Button>
               </CardContent>
             </Card>

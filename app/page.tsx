@@ -53,7 +53,7 @@ export default async function LandingPage() {
             <Link href="/faq" className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
               FAQ
             </Link>
-            <Link href="/contact" className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
+            <Link href="/support" className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
               Contact Us
             </Link>
           </nav>
@@ -353,7 +353,7 @@ export default async function LandingPage() {
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li><Link href="/faq" className="hover:text-foreground transition-colors">FAQ</Link></li>
                 <li><Link href="/refund-policy" className="hover:text-foreground transition-colors">Refund Policy</Link></li>
-                <li><Link href="/contact" className="hover:text-foreground transition-colors">Contact Us</Link></li>
+                <li><Link href="/support" className="hover:text-foreground transition-colors">Contact Us</Link></li>
               </ul>
             </div>
             <div>
