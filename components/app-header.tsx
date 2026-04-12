@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { Menu, LogOut, User, Wallet, ChevronDown, Gamepad2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/theme-toggle'
 import {
   Breadcrumb,
   BreadcrumbLink,
@@ -87,6 +88,9 @@ export function AppHeader({ breadcrumbs = [], user }: AppHeaderProps) {
 
       {user && (
         <div className="flex items-center gap-3">
+          {/* Theme Toggle */}
+          <ThemeToggle />
+
           {/* Wallet Balance */}
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted text-sm">
             <Wallet className="h-4 w-4 text-primary" />

@@ -70,27 +70,33 @@ export default function SupportPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <ThemeToggle />
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 glass border-b border-border/30">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-            <Gamepad2 className="h-6 w-6 text-primary" />
-            <span>Elevate Gaming</span>
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg gradient-primary">
+              <Gamepad2 className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <span className="text-lg font-semibold">Elevate</span>
           </Link>
-          <nav className="hidden md:flex items-center gap-6">
-            <Link href="/faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <nav className="hidden md:flex items-center gap-1">
+            <Link href="/games" className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
+              Games
+            </Link>
+            <Link href="/faq" className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
               FAQ
             </Link>
-            <Link href="/browse-services" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <Link href="/browse-services" className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
               Services
             </Link>
           </nav>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" asChild>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <div className="w-px h-5 bg-border/50 hidden sm:block" />
+            <Button variant="ghost" size="sm" asChild>
               <Link href="/auth/login">Sign In</Link>
             </Button>
-            <Button asChild>
+            <Button size="sm" className="gradient-primary border-0" asChild>
               <Link href="/auth/register">Get Started</Link>
             </Button>
           </div>
