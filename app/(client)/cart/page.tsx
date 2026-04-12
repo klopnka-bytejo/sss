@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { ClientHeader } from '@/components/client-header'
 import { toast } from 'sonner'
 import { 
   ShoppingCart, 
@@ -120,50 +120,13 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/30">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg gradient-primary">
-              <Gamepad2 className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-semibold">Elevate</span>
-          </Link>
-          
-          <nav className="hidden md:flex items-center gap-1">
-            <Link href="/games" className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
-              Games
-            </Link>
-            <Link href="/browse-services" className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
-              Services
-            </Link>
-            <Link href="/become-pro" className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
-              Become a PRO
-            </Link>
-          </nav>
+      <ClientHeader 
+        title="Cart"
+        breadcrumbs={[{ label: 'Cart', href: '/cart' }]}
+      />
 
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <div className="w-px h-5 bg-border/50 hidden sm:block" />
-            <Link href="/cart">
-              <Button variant="ghost" size="sm" className="relative">
-                <ShoppingCart className="h-5 w-5" />
-                {items.length > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full gradient-primary text-xs flex items-center justify-center text-primary-foreground font-medium">
-                    {items.length}
-                  </span>
-                )}
-              </Button>
-            </Link>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/auth/login">Sign In</Link>
-            </Button>
-            <Button size="sm" className="gradient-primary border-0" asChild>
-              <Link href="/auth/register">Get Started</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
+      {/* Main Content */}
+      <div className="pt-14">
 
       {/* Main Content */}
       <main className="pt-16 min-h-screen">

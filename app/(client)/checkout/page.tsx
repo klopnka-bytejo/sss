@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { ClientHeader } from '@/components/client-header'
 import {
   ShoppingCart,
   ArrowLeft,
@@ -112,14 +112,17 @@ export default function CheckoutPage() {
   if (orderCreated) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="fixed top-4 right-4 z-50"><ThemeToggle /></div>
+        <ClientHeader 
+          title="Order Confirmation"
+          breadcrumbs={[{ label: 'Orders', href: '/dashboard/client/orders' }]}
+        />
         
         {/* Background Effects */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-green-500/10 rounded-full blur-[150px]" />
         </div>
 
-        <div className="relative z-10 glass rounded-2xl max-w-md w-full text-center p-8">
+        <div className="relative z-10 glass rounded-2xl max-w-md w-full text-center p-8 mt-20">
           <div className="mb-6">
             <div className="w-20 h-20 mx-auto rounded-full bg-green-500/20 flex items-center justify-center mb-4">
               <CheckCircle className="h-10 w-10 text-green-500" />
@@ -169,35 +172,16 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/30">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg gradient-primary">
-              <Gamepad2 className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-semibold">Elevate</span>
-          </Link>
-          
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Lock className="h-4 w-4" />
-            <span>Secure Checkout</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <div className="w-px h-5 bg-border/50 hidden sm:block" />
-            <Link href="/cart">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Cart
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <ClientHeader 
+        title="Checkout"
+        breadcrumbs={[
+          { label: 'Cart', href: '/cart' },
+          { label: 'Checkout', href: '/checkout' }
+        ]}
+      />
 
       {/* Main Content */}
+      <div className="pt-14">
       <main className="pt-16 min-h-screen">
         {/* Background Effects */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">

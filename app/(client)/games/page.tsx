@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { ClientHeader } from '@/components/client-header'
 import { 
   Gamepad2, 
   ShoppingCart, 
@@ -173,57 +173,17 @@ export default function GamesPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/30">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg gradient-primary">
-              <Gamepad2 className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-semibold">Elevate</span>
-          </Link>
-          
-          <nav className="hidden md:flex items-center gap-1">
-            <Link href="/games" className="px-4 py-2 text-sm text-foreground font-medium transition-colors rounded-lg bg-secondary/50">
-              Games
-            </Link>
-            <Link href="/browse-services" className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
-              Services
-            </Link>
-            <Link href="/become-pro" className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
-              Become a PRO
-            </Link>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <div className="w-px h-5 bg-border/50 hidden sm:block" />
-            <Link href="/cart">
-              <Button variant="ghost" size="sm" className="relative">
-                <ShoppingCart className="h-5 w-5" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full gradient-primary text-xs flex items-center justify-center text-primary-foreground font-medium">
-                    {cartCount}
-                  </span>
-                )}
-              </Button>
-            </Link>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/auth/login">Sign In</Link>
-            </Button>
-            <Button size="sm" className="gradient-primary border-0" asChild>
-              <Link href="/auth/register">Get Started</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
+      <ClientHeader 
+        title="Games"
+        breadcrumbs={[{ label: 'Games', href: '/games' }]}
+      />
 
       {/* Main Content with optional sidebar */}
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen pt-14">
         {/* Games Section */}
         <div className={`flex-1 transition-all duration-500 ease-out ${selectedGame ? 'sm:mr-[400px] lg:mr-[440px]' : ''}`}>
           {/* Hero Section */}
-          <section className="relative pt-24 pb-12 overflow-hidden">
+          <section className="relative py-12 overflow-hidden">
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-primary/10 rounded-full blur-[150px]" />
               <div className="absolute bottom-0 right-1/4 w-[300px] h-[300px] bg-accent/10 rounded-full blur-[100px]" />
@@ -373,7 +333,7 @@ export default function GamesPage() {
         {/* Services Slide Panel */}
         <div 
           ref={panelRef}
-          className={`fixed top-16 right-0 bottom-0 w-full sm:w-[400px] lg:w-[440px] z-40 transform transition-transform duration-500 ease-out ${
+          className={`fixed top-14 right-0 bottom-0 w-full sm:w-[400px] lg:w-[440px] z-40 transform transition-transform duration-500 ease-out ${
             selectedGame ? 'translate-x-0' : 'translate-x-full'
           }`}
         >

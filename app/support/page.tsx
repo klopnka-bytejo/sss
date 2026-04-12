@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { ClientHeader } from "@/components/client-header"
 import {
   Select,
   SelectContent,
@@ -70,40 +70,12 @@ export default function SupportPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 glass border-b border-border/30">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg gradient-primary">
-              <Gamepad2 className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-semibold">Elevate</span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-1">
-            <Link href="/games" className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
-              Games
-            </Link>
-            <Link href="/faq" className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
-              FAQ
-            </Link>
-            <Link href="/browse-services" className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
-              Services
-            </Link>
-          </nav>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <div className="w-px h-5 bg-border/50 hidden sm:block" />
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/auth/login">Sign In</Link>
-            </Button>
-            <Button size="sm" className="gradient-primary border-0" asChild>
-              <Link href="/auth/register">Get Started</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
+      <ClientHeader 
+        title="Support"
+        breadcrumbs={[{ label: 'Support', href: '/support' }]}
+      />
 
-      <main className="container mx-auto px-4 py-12">
+      <main className="container mx-auto px-4 py-12 pt-20">
         <div className="max-w-4xl mx-auto">
           {/* Header Section */}
           <div className="text-center mb-12">
