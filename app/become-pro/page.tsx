@@ -60,8 +60,15 @@ export default function BecomeProPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
+  return (
+    <div className="min-h-screen bg-background">
+      <ClientHeader 
+        title="Become a PRO"
+        breadcrumbs={[{ label: 'Become a PRO', href: '/become-pro' }]}
+      />
+
       <div className="container mx-auto px-4 py-12 pt-20">
-      <div className="max-w-2xl mx-auto space-y-8">
+        <div className="max-w-2xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-2">
           <Link href="/" className="inline-block">

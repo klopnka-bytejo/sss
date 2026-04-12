@@ -96,28 +96,8 @@ export default function BrowseServicesPage() {
         breadcrumbs={[{ label: 'Services', href: '/browse-services' }]}
       />
 
-      {/* Main Content */}
-      <div className="pt-14">
-                <ShoppingCart className="h-5 w-5" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full gradient-primary text-xs flex items-center justify-center text-primary-foreground font-medium">
-                    {cartCount}
-                  </span>
-                )}
-              </Button>
-            </Link>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/auth/login">Sign In</Link>
-            </Button>
-            <Button size="sm" className="gradient-primary border-0" asChild>
-              <Link href="/auth/register">Get Started</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
-
       {/* Hero Section */}
-      <section className="relative pt-24 pb-12 overflow-hidden">
+      <section className="relative py-12 pt-20 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-primary/10 rounded-full blur-[150px]" />
           <div className="absolute bottom-0 right-1/4 w-[300px] h-[300px] bg-accent/10 rounded-full blur-[100px]" />

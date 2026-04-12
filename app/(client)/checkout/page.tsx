@@ -181,8 +181,7 @@ export default function CheckoutPage() {
       />
 
       {/* Main Content */}
-      <div className="pt-14">
-      <main className="pt-16 min-h-screen">
+      <main className="pt-20 min-h-screen">
         {/* Background Effects */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-20 left-1/4 w-[400px] h-[400px] bg-primary/5 rounded-full blur-[120px]" />

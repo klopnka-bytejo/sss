@@ -129,10 +129,15 @@ const faqCategories = [
 
 export default function FAQPage() {
   return (
-    <AppLayout>
-      <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
+      <ClientHeader 
+        title="FAQ"
+        breadcrumbs={[{ label: 'FAQ', href: '/faq' }]}
+      />
+
+      <div className="pt-14">
         {/* Hero Section */}
-        <section className="relative py-16 overflow-hidden">
+        <section className="relative py-12 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-background to-background" />
           <div className="container relative">
             <div className="max-w-3xl mx-auto text-center">
