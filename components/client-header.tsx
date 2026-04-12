@@ -14,9 +14,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { createClient } from '@/lib/supabase/client'
 import { Gamepad2, LogOut, User, Wallet, ShoppingCart, MessageSquare, ChevronDown } from 'lucide-react'
-import type { Profile } from '@/lib/types'
+
+interface UserProfile {
+  id: string
+  email: string
+  display_name: string | null
+  username?: string | null
+  avatar_url?: string | null
+  balance_cents?: number
+  role: string
+}
 
 interface ClientHeaderProps {
   title?: string
@@ -33,28 +41,28 @@ const NAV_LINKS = [
 export function ClientHeader({ title, breadcrumbs }: ClientHeaderProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function fetchProfile() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { setLoading(false); return }
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-      setProfile(data)
-      setLoading(false)
+      try {
+        const res = await fetch('/api/auth/me')
+        const data = await res.json()
+        if (data.user) {
+          setProfile(data.user)
+        }
+      } catch (error) {
+        console.error('[v0] ClientHeader: Error fetching user:', error)
+      } finally {
+        setLoading(false)
+      }
     }
     fetchProfile()
   }, [])
 
   const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
+    await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/')
     router.refresh()
   }
@@ -63,6 +71,8 @@ export function ClientHeader({ title, breadcrumbs }: ClientHeaderProps) {
     if (!name) return 'U'
     return name.slice(0, 2).toUpperCase()
   }
+
+  const displayName = profile?.display_name || profile?.username || 'User'
 
   const formatBalance = (cents: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100)
@@ -123,13 +133,13 @@ export function ClientHeader({ title, breadcrumbs }: ClientHeaderProps) {
                     className="flex items-center gap-2 px-2 h-9 rounded-lg hover:bg-secondary/60 transition-colors"
                   >
                     <Avatar className="h-7 w-7 ring-2 ring-primary/20">
-                      <AvatarImage src={profile.avatar_url || undefined} alt={profile.username || 'User'} />
+                      <AvatarImage src={profile.avatar_url || undefined} alt={displayName} />
                       <AvatarFallback className="gradient-primary text-primary-foreground text-xs font-semibold">
-                        {getInitials(profile.username)}
+                        {getInitials(displayName)}
                       </AvatarFallback>
                     </Avatar>
                     <span className="hidden sm:block text-sm font-medium max-w-[100px] truncate">
-                      {profile.username || 'User'}
+                      {displayName}
                     </span>
                     <ChevronDown className="h-3 w-3 text-muted-foreground hidden sm:block" />
                   </Button>
@@ -142,11 +152,11 @@ export function ClientHeader({ title, breadcrumbs }: ClientHeaderProps) {
                       <Avatar className="h-10 w-10 ring-2 ring-primary/20">
                         <AvatarImage src={profile.avatar_url || undefined} />
                         <AvatarFallback className="gradient-primary text-primary-foreground text-sm font-semibold">
-                          {getInitials(profile.username)}
+                          {getInitials(displayName)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col min-w-0">
-                        <span className="font-semibold text-sm truncate">{profile.username || 'User'}</span>
+                        <span className="font-semibold text-sm truncate">{displayName}</span>
                         <span className="text-xs text-muted-foreground truncate">{profile.email}</span>
                       </div>
                     </div>

@@ -11,9 +11,11 @@ export async function GET() {
       return NextResponse.json({ user: null })
     }
 
-    // Query database for actual user data
+    // Query database for full user profile data
     const users = await sql`
-      SELECT id, email, display_name, role FROM profiles WHERE id = ${userId}
+      SELECT id, email, display_name, username, avatar_url, balance_cents, role 
+      FROM profiles 
+      WHERE id = ${userId}
     `
 
     if (!users || users.length === 0) {
