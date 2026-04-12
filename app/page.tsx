@@ -1,9 +1,22 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { 
   Gamepad2, 
@@ -17,8 +30,22 @@ import {
   Search,
   Clock,
   TrendingUp,
-  Play
+  Play,
+  LogOut,
+  User,
+  Wallet,
+  MessageSquare,
+  ChevronDown
 } from "lucide-react"
+
+interface UserProfile {
+  id: string
+  email: string
+  display_name: string | null
+  avatar_url?: string | null
+  balance_cents?: number
+  role: string
+}
 
 function formatCurrency(cents: number) {
   return new Intl.NumberFormat('en-US', {
@@ -27,9 +54,45 @@ function formatCurrency(cents: number) {
   }).format(cents / 100)
 }
 
-export default async function LandingPage() {
-  // Removed database queries - will fetch data client-side if needed
-  
+export default function LandingPage() {
+  const router = useRouter()
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const res = await fetch('/api/auth/me')
+        const data = await res.json()
+        if (data.user) {
+          setProfile(data.user)
+        }
+      } catch (error) {
+        console.error('[v0] Home: Error fetching user:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchProfile()
+  }, [])
+
+  const handleSignOut = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/')
+    router.refresh()
+  }
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return 'U'
+    return name.slice(0, 2).toUpperCase()
+  }
+
+  const formatBalance = (cents: number | undefined) => {
+    if (!cents) return '$0.00'
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100)
+  }
+
+  const displayName = profile?.display_name || 'User'
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -59,13 +122,95 @@ export default async function LandingPage() {
 
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <div className="w-px h-5 bg-border/50 mx-1 hidden sm:block" />
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/auth/login">Sign In</Link>
-            </Button>
-            <Button size="sm" className="gradient-primary border-0" asChild>
-              <Link href="/auth/register">Get Started</Link>
-            </Button>
+
+            {!loading && profile ? (
+              /* ── Logged in ── */
+              <>
+                <div className="w-px h-5 bg-border/50 hidden sm:block" />
+
+                {/* Avatar dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="flex items-center gap-2 px-2 h-9 rounded-lg hover:bg-secondary/60 transition-colors"
+                    >
+                      <Avatar className="h-7 w-7 ring-2 ring-primary/20">
+                        <AvatarImage src={profile.avatar_url || undefined} alt={displayName} />
+                        <AvatarFallback className="gradient-primary text-primary-foreground text-xs font-semibold">
+                          {getInitials(displayName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="hidden sm:block text-sm font-medium max-w-[100px] truncate">
+                        {displayName}
+                      </span>
+                      <ChevronDown className="h-3 w-3 text-muted-foreground hidden sm:block" />
+                    </Button>
+                  </DropdownMenuTrigger>
+
+                  <DropdownMenuContent align="end" className="w-60" sideOffset={8}>
+                    {/* User info header */}
+                    <DropdownMenuLabel className="pb-2">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+                          <AvatarImage src={profile.avatar_url || undefined} />
+                          <AvatarFallback className="gradient-primary text-primary-foreground text-sm font-semibold">
+                            {getInitials(displayName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-semibold text-sm truncate">{displayName}</span>
+                          <span className="text-xs text-muted-foreground truncate">{profile.email}</span>
+                        </div>
+                      </div>
+                    </DropdownMenuLabel>
+
+                    <DropdownMenuSeparator />
+
+                    <DropdownMenuItem onClick={() => router.push('/profile')} className="gap-2 cursor-pointer">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <span>Profile</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem onClick={() => router.push('/wallet')} className="gap-2 cursor-pointer">
+                      <Wallet className="h-4 w-4 text-muted-foreground" />
+                      <span>Wallet</span>
+                      <span className="ml-auto text-xs font-medium text-primary">
+                        {formatBalance(profile.balance_cents)}
+                      </span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem onClick={() => router.push('/dashboard/client/messages')} className="gap-2 cursor-pointer">
+                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                      <span>Messages</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator />
+
+                    <DropdownMenuItem
+                      onClick={handleSignOut}
+                      className="gap-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>Sign Out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : !loading ? (
+              /* ── Guest ── */
+              <>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/auth/login">Sign In</Link>
+                </Button>
+                <Button size="sm" className="gradient-primary border-0" asChild>
+                  <Link href="/auth/register">Get Started</Link>
+                </Button>
+              </>
+            ) : (
+              /* skeleton placeholder while loading */
+              <div className="h-9 w-9 rounded-lg bg-secondary/40 animate-pulse" />
+            )}
           </div>
         </div>
       </header>
