@@ -46,12 +46,10 @@ export function UserAvatarMenu({ user, onSignOut }: UserAvatarMenuProps) {
     setSigningOut(true)
     try {
       await fetch('/api/auth/logout', { method: 'POST' })
-      if (onSignOut) {
-        onSignOut()
-      } else {
-        // Clear state by navigating client-side — no full reload
-        router.push('/')
-      }
+      // Always clear parent state if provided
+      if (onSignOut) onSignOut()
+      // Always redirect to home immediately — no page reload
+      router.push('/')
     } catch {
       setSigningOut(false)
     }
