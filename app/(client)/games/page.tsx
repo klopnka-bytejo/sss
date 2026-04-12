@@ -179,7 +179,7 @@ export default function GamesPage() {
       />
 
       {/* Main Content with optional sidebar */}
-      <div className="flex min-h-screen pt-14">
+      <div className="flex min-h-screen pt-16">
         {/* Games Section */}
         <div className={`flex-1 transition-all duration-500 ease-out ${selectedGame ? 'sm:mr-[400px] lg:mr-[440px]' : ''}`}>
           {/* Hero Section */}

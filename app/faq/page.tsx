@@ -1,6 +1,5 @@
 "use client"
 
-import { AppLayout } from "@/components/app-layout"
 import { ClientHeader } from "@/components/client-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -135,7 +134,7 @@ export default function FAQPage() {
         breadcrumbs={[{ label: 'FAQ', href: '/faq' }]}
       />
 
-      <div className="pt-14">
+      <div className="pt-16">
         {/* Hero Section */}
         <section className="relative py-12 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-background to-background" />
