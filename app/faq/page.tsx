@@ -1,6 +1,7 @@
 "use client"
 
 import { AppLayout } from "@/components/app-layout"
+import { ClientHeader } from "@/components/client-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Accordion,
@@ -201,6 +202,6 @@ export default function FAQPage() {
           </div>
         </section>
       </div>
-    </AppLayout>
+    </div>
   )
 }

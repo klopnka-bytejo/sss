@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { ClientHeader } from "@/components/client-header"
 import { 
   Gamepad2, 
   ArrowRight,
@@ -23,38 +24,10 @@ import {
 export default function HowItWorksPage() {
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 glass border-b border-border/30">
-        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg gradient-primary">
-              <Gamepad2 className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="font-semibold">Elevate</span>
-          </Link>
-          
-          <nav className="hidden md:flex items-center gap-1">
-            <Link href="/games" className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
-              Games
-            </Link>
-            <Link href="/browse-services" className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
-              Services
-            </Link>
-            <Link href="/how-it-works" className="px-3 py-1.5 text-sm text-foreground font-medium rounded-lg bg-secondary/50">
-              How It Works
-            </Link>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/auth/login">Sign In</Link>
-            </Button>
-            <Button size="sm" className="gradient-primary border-0" asChild>
-              <Link href="/auth/register">Get Started</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
+      <ClientHeader 
+        title="How It Works"
+        breadcrumbs={[{ label: 'How It Works', href: '/how-it-works' }]}
+      />
 
       {/* Hero */}
       <section className="py-16 relative overflow-hidden">

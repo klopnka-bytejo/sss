@@ -11,8 +11,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ClientHeader } from '@/components/client-header'
 import { Gamepad2, Loader2, AlertCircle, CheckCircle2, Trophy, Zap, Shield } from 'lucide-react'
-import { ThemeToggle } from '@/components/theme-toggle'
 
 const GAMES = [
   { id: 'league-of-legends', name: 'League of Legends' },
@@ -60,115 +60,7 @@ export default function BecomeProPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
-  const toggleGame = (gameId: string) => {
-    setFormData(prev => {
-      const newGames = prev.games.includes(gameId)
-        ? prev.games.filter(g => g !== gameId)
-        : [...prev.games, gameId]
-      return {
-        ...prev,
-        games: newGames
-      }
-    })
-  }
-
-  const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
-
-  const validateForm = () => {
-    // Only validate fields that exist in the database:
-    // display_name (required), email (required), games (optional), discord (optional), experience (optional), achievements (optional)
-    if (!formData.fullName.trim()) return 'Display name is required'
-    if (!formData.email.includes('@')) return 'Valid email is required'
-    if (formData.games.length === 0) return 'Select at least one game'
-    return null
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    // Validate form first
-    const validationError = validateForm()
-    if (validationError) {
-      setError(validationError)
-      return
-    }
-
-    setLoading(true)
-    setError(null)
-
-    try {
-      const res = await fetch('/api/become-pro', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      })
-
-      // Get response as text first
-      const text = await res.text()
-      
-      // Try to parse as JSON
-      let data
-      try {
-        data = JSON.parse(text)
-      } catch {
-        console.error('[v0] Non-JSON response:', text.substring(0, 200))
-        setError('Server error. Please try again later.')
-        setLoading(false)
-        return
-      }
-
-      if (!res.ok) {
-        setError(data.message || data.error || 'Application submission failed')
-        setLoading(false)
-        return
-      }
-
-      // Success
-      setSuccess(true)
-      setLoading(false)
-      setTimeout(() => {
-        router.push('/')
-      }, 3000)
-    } catch (err) {
-      console.error('[v0] Submit error:', err)
-      const errorMsg = err instanceof Error ? err.message : 'An error occurred. Please try again.'
-      setError(errorMsg)
-      setLoading(false)
-    }
-  }
-
-  if (success) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md text-center">
-          <CardContent className="pt-10 pb-10 space-y-4">
-            <div className="flex justify-center">
-              <div className="relative">
-                <div className="absolute inset-0 bg-green-500/20 blur-xl rounded-full" />
-                <CheckCircle2 className="h-16 w-16 text-green-500 relative" />
-              </div>
-            </div>
-            <h2 className="text-2xl font-bold">Application Submitted Successfully!</h2>
-            <p className="text-muted-foreground">
-              We&apos;ll contact you soon on Discord to complete the application process. Please keep an eye on your Discord messages from our team.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Redirecting to home page in a few seconds...
-            </p>
-            <Link href="/">
-              <Button className="w-full">Back to Home</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  return (
-    <div className="min-h-screen bg-background py-12 px-4">
-      <ThemeToggle />
+      <div className="container mx-auto px-4 py-12 pt-20">
       <div className="max-w-2xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-2">
@@ -411,6 +303,7 @@ export default function BecomeProPage() {
             </p>
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   )

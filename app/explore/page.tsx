@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ClientHeader } from "@/components/client-header"
 import { sql } from "@/lib/neon/server"
 import { 
   Gamepad2, 
@@ -56,40 +57,12 @@ export default async function ExplorePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 glass border-b border-border/30">
-        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg gradient-primary">
-              <Gamepad2 className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="font-semibold">Elevate</span>
-          </Link>
-          
-          <nav className="hidden md:flex items-center gap-1">
-            <Link href="/games" className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
-              Games
-            </Link>
-            <Link href="/browse-services" className="px-3 py-1.5 text-sm text-foreground font-medium rounded-lg bg-secondary/50">
-              Services
-            </Link>
-            <Link href="/faq" className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50">
-              FAQ
-            </Link>
-          </nav>
+      <ClientHeader 
+        title="Explore"
+        breadcrumbs={[{ label: 'Explore', href: '/explore' }]}
+      />
 
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/auth/login">Sign In</Link>
-            </Button>
-            <Button size="sm" className="gradient-primary border-0" asChild>
-              <Link href="/auth/register">Get Started</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 pt-20">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar - Games Filter */}
           <aside className="lg:w-64 flex-shrink-0">

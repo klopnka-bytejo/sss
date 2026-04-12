@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ClientHeader } from "@/components/client-header"
 import { 
   Gamepad2, 
   Target, 
@@ -21,30 +22,12 @@ export const metadata = {
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="p-2 rounded-lg gradient-primary">
-              <Gamepad2 className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-lg">Elevate Gaming</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Home
-              </Button>
-            </Link>
-            <Link href="/auth/login">
-              <Button size="sm">Sign In</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <ClientHeader 
+        title="About"
+        breadcrumbs={[{ label: 'About', href: '/about' }]}
+      />
 
-      <main className="container mx-auto px-4 py-12">
+      <main className="container mx-auto px-4 py-12 pt-20">
         {/* Hero Section */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <div className="flex justify-center mb-6">
