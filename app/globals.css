@@ -230,3 +230,34 @@
 ::-webkit-scrollbar-thumb:hover {
   background: oklch(0.35 0.01 260);
 }
+
+/* Custom skull cursor — reference silhouette (elongated flame-top skull mask) */
+html,
+body {
+  cursor: url('/cursors/skull.svg') 16 2, auto;
+}
+
+a,
+button,
+[role="button"],
+[type="button"],
+[type="submit"],
+label[for],
+summary,
+select,
+.cursor-pointer {
+  cursor: url('/cursors/skull.svg') 16 2, pointer;
+}
+
+/* Keep text-input fields usable with native I-beam cursor */
+input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]),
+textarea,
+[contenteditable="true"] {
+  cursor: text;
+}
+
+/* Disabled controls get no custom cursor */
+button:disabled,
+[disabled] {
+  cursor: not-allowed;
+}
