@@ -4,6 +4,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { CartProvider } from '@/lib/contexts/cart-context'
 import { ThemeProvider } from '@/components/theme-provider'
+import { SkullCursor } from '@/components/skull-cursor'
 import { Toaster } from 'sonner'
 import './globals.css'
 
@@ -60,6 +61,7 @@ export default function RootLayout({
           <CartProvider>
             {children}
           </CartProvider>
+          <SkullCursor />
           <Toaster 
             position="top-center"
             toastOptions={{

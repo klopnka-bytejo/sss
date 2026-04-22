@@ -231,33 +231,166 @@
   background: oklch(0.35 0.01 260);
 }
 
-/* Custom skull cursor — reference silhouette (elongated flame-top skull mask) */
-html,
-body {
-  cursor: url('/cursors/skull.svg') 16 2, auto;
+/* ── Smart Skull Cursor ───────────────────────────────────────────── */
+
+/* Hide native cursor globally on pointer-fine devices; SkullCursor component renders its own */
+@media (pointer: fine) {
+  html,
+  body,
+  a,
+  button,
+  [role="button"],
+  [type="button"],
+  [type="submit"],
+  label[for],
+  summary,
+  select,
+  .cursor-pointer {
+    cursor: none;
+  }
+
+  /* Text inputs keep the native I-beam so typing feels natural */
+  input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  textarea,
+  [contenteditable="true"] {
+    cursor: text;
+  }
+
+  button:disabled,
+  [disabled] {
+    cursor: none;
+  }
 }
 
-a,
-button,
-[role="button"],
-[type="button"],
-[type="submit"],
-label[for],
-summary,
-select,
-.cursor-pointer {
-  cursor: url('/cursors/skull.svg') 16 2, pointer;
+.skull-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 99999;
+  /* hotspot alignment: SVG tip is at (16,2) in the 32x44 viewBox → at render
+     (40x55) the tip sits at (20, 2.5). Shift so that tip aligns with cursor coords. */
+  margin-left: -20px;
+  margin-top: -2.5px;
+  will-change: transform, opacity;
+  opacity: 0;
+  transition: opacity 0.18s ease-out;
+  /* default eye palette */
+  --eye-color: #3b82f6;
+  --eye-core: #dbeafe;
+  --eye-edge: rgba(59, 130, 246, 0);
+  --eye-glow: rgba(59, 130, 246, 0.55);
+  --cursor-scale: 1;
 }
 
-/* Keep text-input fields usable with native I-beam cursor */
-input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]),
-textarea,
-[contenteditable="true"] {
-  cursor: text;
+.skull-cursor[data-visible='true'] {
+  opacity: 1;
 }
 
-/* Disabled controls get no custom cursor */
-button:disabled,
-[disabled] {
-  cursor: not-allowed;
+.skull-cursor--text {
+  opacity: 0 !important;
+}
+
+.skull-cursor__svg {
+  display: block;
+  transform: scale(var(--cursor-scale));
+  transform-origin: 20px 2.5px; /* anchor at the tip so scaling does not move the hotspot */
+  transition:
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.18s ease-out;
+  /* outer glow around the skull eyes */
+  filter: drop-shadow(0 0 4px var(--eye-glow)) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
+}
+
+.skull-cursor__eyes ellipse,
+.skull-cursor__eyes circle {
+  transition: fill 0.2s ease-out;
+}
+
+/* idle pulse: every ~3s a soft breathing of the eye glow */
+.skull-cursor[data-state='idle'] .skull-cursor__svg {
+  animation: skull-cursor-pulse 2.8s ease-in-out infinite;
+}
+
+/* ── HOVER (clickable) ── */
+.skull-cursor[data-state='hover'] {
+  --eye-color: #ef4444;
+  --eye-core: #fecaca;
+  --eye-edge: rgba(239, 68, 68, 0);
+  --eye-glow: rgba(239, 68, 68, 0.6);
+  --cursor-scale: 1.05;
+}
+
+/* ── CTA (primary button / gradient-primary / data-cta) ── */
+.skull-cursor[data-state='cta'] {
+  --eye-color: #dc2626;
+  --eye-core: #fee2e2;
+  --eye-edge: rgba(220, 38, 38, 0);
+  --eye-glow: rgba(239, 68, 68, 0.9);
+  --cursor-scale: 1.08;
+}
+.skull-cursor[data-state='cta'] .skull-cursor__svg {
+  animation: skull-cursor-cta-pulse 1.4s ease-in-out infinite;
+}
+
+/* ── DISABLED ── */
+.skull-cursor[data-state='disabled'] {
+  --eye-color: #6b7280;
+  --eye-core: #d1d5db;
+  --eye-edge: rgba(107, 114, 128, 0);
+  --eye-glow: rgba(107, 114, 128, 0.15);
+  --cursor-scale: 0.98;
+}
+.skull-cursor[data-state='disabled'] .skull-cursor__svg {
+  animation: none;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+}
+
+/* ── ACTIVE (clicked) — brighter red flash + quick squash ── */
+.skull-cursor[data-active='true'] {
+  --eye-color: #ff1f1f;
+  --eye-core: #ffffff;
+  --eye-glow: rgba(255, 31, 31, 1);
+}
+.skull-cursor[data-active='true'] .skull-cursor__svg {
+  animation: skull-cursor-click 0.18s ease-out;
+}
+
+/* ── keyframes ── */
+@keyframes skull-cursor-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 3px var(--eye-glow)) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
+  }
+  50% {
+    filter: drop-shadow(0 0 7px var(--eye-glow)) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
+  }
+}
+
+@keyframes skull-cursor-cta-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px var(--eye-glow)) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
+  }
+  50% {
+    filter: drop-shadow(0 0 14px var(--eye-glow)) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
+  }
+}
+
+@keyframes skull-cursor-click {
+  0% {
+    transform: scale(var(--cursor-scale));
+  }
+  40% {
+    transform: scale(calc(var(--cursor-scale) * 0.9)) translateY(1px);
+    filter: drop-shadow(0 0 14px var(--eye-glow)) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
+  }
+  100% {
+    transform: scale(var(--cursor-scale));
+  }
+}
+
+/* Respect reduced-motion: still color-reactive but no pulsing */
+@media (prefers-reduced-motion: reduce) {
+  .skull-cursor[data-state] .skull-cursor__svg {
+    animation: none !important;
+  }
 }
